@@ -46,7 +46,8 @@ def load_data(dataset, seed=None):
 
     return (X_train, y_train), (X_devel, y_devel), (X_test, y_test)
 
-def classifier_generator((xs, ys), batch_size, infinity=True, augment=False):
+def classifier_generator(d, batch_size, infinity=True, augment=False):
+    (xs, ys) = d
     if augment:
         datagen = ImageDataGenerator(
             featurewise_center=True,
