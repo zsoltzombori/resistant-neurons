@@ -12,9 +12,9 @@ DATASET = "mnist"
 TRAINSIZE = 20000
 SEED = None
 BN_DO = 'DO'  # "BN" (batchnorm), "DO" (dropout), None
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 DEPTH = 4
-WIDTH = 20
+WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
@@ -70,7 +70,7 @@ train_gen = data.classifier_generator((X_train, y_train), BATCH_SIZE,
 inputs = tf.placeholder(tf.float32, shape=[BATCH_SIZE] + list(INPUT_SHAPE))
 if CLASSIFIER_TYPE == "dense":
     output, activations, zs = networks.DenseNet(inputs, DEPTH, WIDTH, BN_DO,
-                                                OUTPUT_COUNT, dropout=1)
+                                                OUTPUT_COUNT, dropout=0.5)
 elif CLASSIFIER_TYPE == "conv":
     output, activations, zs = networks.LeNet(
         inputs, BN_DO, OUTPUT_COUNT, dropout=0.8)
@@ -159,6 +159,7 @@ print("NETWORK PARAMETER COUNT",
 session.run(tf.global_variables_initializer())
 session.run(tf.local_variables_initializer())
 activations_dict = {}
+zs_dict = {}
 
 
 def evaluate(Xs, ys, BATCH_SIZE):
@@ -184,7 +185,8 @@ def evaluate(Xs, ys, BATCH_SIZE):
     for i, _ in enumerate(nonzeros):
         nonzeros[i] = nonzeros[i] * 1.0 / (len(Xs))
         nonzeros[i] = np.histogram(nonzeros[i], bins=10, range=(0.0, 1.0))[0]
-    return eval_loss, eval_acc, nonzeros, activations
+
+    return eval_loss, eval_acc, nonzeros, activations, zs
 
 
 def accuracy(predicted, expected):
@@ -205,9 +207,10 @@ for iteration in range(ITERS+1):
     # eval step
     if iteration % 500 == 0:
         train_acc = accuracy(predicted, train_data[1])
-        eval_loss, eval_acc, nonzeros, current_activations = evaluate(
+        eval_loss, eval_acc, nonzeros, current_activations, current_zs = evaluate(
             X_devel, y_devel, BATCH_SIZE)
-        print(_total_loss)
+
+        # print(_total_loss)
         print('Total loss:{:.3f}, L reg:{}'.format(_total_loss,
                                                    session.run(reg_losses)))
         # print(session.run([reg_losses]))
@@ -215,17 +218,39 @@ for iteration in range(ITERS+1):
         print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
             iteration, train_acc, eval_acc))
         # print(zs)
+        # print(f"HEREWEGO:{nonzeros}")
+
         for line in nonzeros:
             print(' '.join(['{: <2}'.format(x) for x in line]))
-        print()
-        activations_dict[iteration] = session.run([current_activations],
-                                                  feed_dict={inputs:
-                                                             X_devel[:BATCH_SIZE],
-                                                             labels:
-                                                             y_devel[:BATCH_SIZE]})
+
+        # print(current_zs)
+        # print(len(X_devel))
+        zs_evaluated = np.empty((DEPTH, 1, WIDTH))
+        for i in range(0, len(X_devel), BATCH_SIZE):
+            current = [session.run([current_zs],
+                                   feed_dict={inputs: X_devel[i:i+BATCH_SIZE],
+                                              labels: y_devel[i:i+BATCH_SIZE]})]
+            current = np.squeeze(np.array(current))
+            zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
+
+        # activations_dict[iteration] = session.run([current_activations],
+        #                                          feed_dict={inputs: X_devel[:BATCH_SIZE], labels: y_devel[:BATCH_SIZE]})
+        # zs_dict[iteration] = session.run([current_zs],
+        #                                 feed_dict={inputs: X_devel[:200], labels: y_devel[:200]})
+        # print(zs_evaluated.shape)
+        zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
+
 print("Total time: {}".format(time.time() - start_time))
-for it in activations_dict:
-    activations_dict[it] = [[nda.tolist() for nda in lst]
-                            for lst in activations_dict[it]]
-with open('neuron_logs/output_{}'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
-    json.dump(activations_dict, f)
+# for it in activations_dict:
+#    activations_dict[it]= [[nda.tolist() for nda in lst]
+#                            for lst in activations_dict[it]]
+# for it in zs_dict:
+#    zs_dict[it]= [[nda.tolist() for nda in lst]
+#                   for lst in zs_dict[it]]
+
+
+# with open('neuron_logs/output_activations_{}'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
+#     json.dump(activations_dict, f)
+
+with open('neuron_logs/output_zs_{}.json'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
+    json.dump(zs_dict, f)

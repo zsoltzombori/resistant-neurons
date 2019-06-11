@@ -14,6 +14,7 @@ def DenseNet(inputs, depth, width, bn_do, output_count, dropout=0.5):
         zs.append(output)
         if bn_do == "BN":
             output = tf.layers.batch_normalization(output)
+
         output = tf.nn.relu(output)
         activations.append(output)
     if bn_do == "DO":
@@ -35,7 +36,7 @@ def LeNet(inputs, bn_do, output_count, dropout=0.5):
     output = tf.nn.relu(output)
     activations.append(tf.contrib.layers.flatten(output))
     output = tf.nn.max_pool(output, ksize=[1, 2, 2, 1], strides=[
-                            1, 2, 2, 1], padding='VALID')
+        1, 2, 2, 1], padding='VALID')
 
     output = tf.layers.conv2d(
         output, 16, (5, 5), padding="valid", name="conv_2")
@@ -43,7 +44,7 @@ def LeNet(inputs, bn_do, output_count, dropout=0.5):
     output = tf.nn.relu(output)
     activations.append(tf.contrib.layers.flatten(output))
     output = tf.nn.max_pool(output, ksize=[1, 2, 2, 1], strides=[
-                            1, 2, 2, 1], padding='VALID')
+        1, 2, 2, 1], padding='VALID')
 
     output = tf.layers.conv2d(
         output, 120, (5, 5), padding="valid", name="conv_3")
