@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.layers
 
 
-def DenseNet(inputs, depth, width, bn_do, output_count, dropout=0.5):
+def DenseNet(inputs, depth, width, bn_do, output_count, dropout=0.5, mask=None):
     activations = []
     zs = []
     output = tf.reshape(inputs, (inputs.shape[0], -1))
@@ -16,6 +16,8 @@ def DenseNet(inputs, depth, width, bn_do, output_count, dropout=0.5):
             output = tf.layers.batch_normalization(output)
 
         output = tf.nn.relu(output)
+        if mask is not None:
+            output = tf.math.multiply(output, mask[i])
         activations.append(output)
     if bn_do == "DO":
         output = tf.nn.dropout(output, dropout)

@@ -1,0 +1,15 @@
+2019.06.13
+1. Rényi szerver hozzáférés Daninak
+
+2. Fashion mnist legyen mnist helyett
+
+3. Neuronok automatikus osztályozása aktivitás alapján
+
+4. Mi történik a pontossággal ha kinullázzuk a (lebegő, aktív, so-so) neuronokat?
+
+5. Mi történik a pontossággal ha kinullázzuk a dropout-os (lebegő, lusta, aktív) neuronokat?
+
+6. Egy neuron önállóan úgy dönt időnként, hogy lecseréli magát egy (több) másik neuron zajozott másolatára (átlagára).
+   Ehhez egy új réteget kell írni.
+
+

@@ -59,6 +59,8 @@ for k, v in [arg.split('=', 1) for arg in sys.argv[1:]]:
 
 ##########################################
 
+dummy_mask = np.ones((DEPTH, WIDTH))
+
 (X_train, y_train), (X_devel, y_devel), (X_test,
                                          y_test) = data.load_data(DATASET, SEED)
 
@@ -68,9 +70,10 @@ INPUT_SHAPE = X_train.shape[1:]
 train_gen = data.classifier_generator((X_train, y_train), BATCH_SIZE,
                                       augment=AUGMENTATION)
 inputs = tf.placeholder(tf.float32, shape=[BATCH_SIZE] + list(INPUT_SHAPE))
+mask = tf.placeholder(tf.float32, shape=[DEPTH, WIDTH])
 if CLASSIFIER_TYPE == "dense":
     output, activations, zs = networks.DenseNet(inputs, DEPTH, WIDTH, BN_DO,
-                                                OUTPUT_COUNT, dropout=0.5)
+                                                OUTPUT_COUNT, dropout=0.5, mask=mask)
 elif CLASSIFIER_TYPE == "conv":
     output, activations, zs = networks.LeNet(
         inputs, BN_DO, OUTPUT_COUNT, dropout=0.8)
@@ -78,6 +81,7 @@ elif CLASSIFIER_TYPE == "conv":
 
 labels = tf.placeholder(tf.uint8, shape=[BATCH_SIZE])
 labels_onehot = tf.one_hot(labels, OUTPUT_COUNT)
+
 
 loss_list = []
 
@@ -173,7 +177,7 @@ def evaluate(Xs, ys, BATCH_SIZE):
     _total_acc = []
     for X_batch, y_batch in eval_gen:
         value_list = session.run([total_loss, output, activations] + list(cov_ops),
-                                 feed_dict={inputs: X_batch, labels: y_batch})
+                                 feed_dict={inputs: X_batch, labels: y_batch, mask: dummy_mask})
         (_total_loss, predicted, _activations) = value_list[:3]
         _total_acc.append(accuracy(predicted, y_batch))
         _total_losses.append(_total_loss)
@@ -200,7 +204,7 @@ for iteration in range(ITERS+1):
     # training step
     _, _total_loss, predicted, loss_summary = session.run(
         [optimizer, total_loss, output, merged_loss_summary_op],
-        feed_dict={inputs: train_data[0], labels: train_data[1]}
+        feed_dict={inputs: train_data[0], labels: train_data[1], mask:dummy_mask}
     )
     log_writer.add_summary(loss_summary, iteration)
 
@@ -229,7 +233,8 @@ for iteration in range(ITERS+1):
         for i in range(0, len(X_devel), BATCH_SIZE):
             current = [session.run([current_zs],
                                    feed_dict={inputs: X_devel[i:i+BATCH_SIZE],
-                                              labels: y_devel[i:i+BATCH_SIZE]})]
+                                              labels: y_devel[i:i+BATCH_SIZE],
+                                              mask: dummy_mask})]
             current = np.squeeze(np.array(current))
             zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
 
