@@ -3,6 +3,8 @@
 
 2. Fashion mnist legyen mnist helyett
 
+2.5. El kell menteni a hálót, majd vissza kell tölteni, hogy lehessen grafikusan nézni, hogy mi történt az egyes neuronokkal illetve hogy működik-e az algoritmus
+
 3. Neuronok automatikus osztályozása aktivitás alapján
 
 4. Mi történik a pontossággal ha kinullázzuk a (lebegő, aktív, so-so) neuronokat?

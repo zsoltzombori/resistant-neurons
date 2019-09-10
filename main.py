@@ -238,24 +238,9 @@ for iteration in range(ITERS+1):
             current = np.squeeze(np.array(current))
             zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
 
-        # activations_dict[iteration] = session.run([current_activations],
-        #                                          feed_dict={inputs: X_devel[:BATCH_SIZE], labels: y_devel[:BATCH_SIZE]})
-        # zs_dict[iteration] = session.run([current_zs],
-        #                                 feed_dict={inputs: X_devel[:200], labels: y_devel[:200]})
-        # print(zs_evaluated.shape)
-        zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
+       zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
 
 print("Total time: {}".format(time.time() - start_time))
-# for it in activations_dict:
-#    activations_dict[it]= [[nda.tolist() for nda in lst]
-#                            for lst in activations_dict[it]]
-# for it in zs_dict:
-#    zs_dict[it]= [[nda.tolist() for nda in lst]
-#                   for lst in zs_dict[it]]
-
-
-# with open('neuron_logs/output_activations_{}'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
-#     json.dump(activations_dict, f)
 
 with open('neuron_logs/output_zs_{}.json'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
     json.dump(zs_dict, f)
