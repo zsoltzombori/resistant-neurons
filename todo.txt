@@ -14,4 +14,25 @@
 6. Egy neuron önállóan úgy dönt időnként, hogy lecseréli magát egy (több) másik neuron zajozott másolatára (átlagára).
    Ehhez egy új réteget kell írni.
 
+7. train on batch, for ciklus belsejében pausolni, interaktív python -i, interaktív shellben csinálni és nézni
+
+8. egész halmazon átfuttatni
+
+9. neuralis halo, egy 500 magas vektor, ez alapján prediktálja a hasznosságot, a teljes betanított hálóban mennyire fájdalmas a kiesése
+Van egy háló, hoz 97%-ot, lelőjük, 95%-t, akkor a 95/97-et prediktálja, vagy -2-t, vagy a darabszám, vagy hogy kihalt-e
+aktivitásmintázat bemenet, globális hasznosság kimenet
+Tehát: aktiváció, hosszú, és súlyok előtte és mögötte
+Teljesen egyszerű háló, minden nélkül
+
+10. ehhez kell tanítóhalmaz, ez valószínűleg függ az architektúrától
+
+Részfeladatok
+1. tanítóhalmaz
+  a, epochonként (mondjuk öccázanként) kigyűjtjük (minden neuronra) a  hasznosságot, 
+  a, ezt a forward cikluson, és újraszámolni az egész halmazon
+  b, epochszám, bemenő súlyvektor, kimenő súlyvektor, és a aktivitásmintázat a teljes adathalmazon (és a valós/prediktált címke)
+  c, Javaslat: minden szám legyen különböző
+  d, neurononként menteni esetleg, hogy ki milyen mélyen van (távolság a kimenettől és a bemenettől)
+  e, 
+2. tanítás
 
