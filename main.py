@@ -204,7 +204,7 @@ for iteration in range(ITERS+1):
     # training step
     _, _total_loss, predicted, loss_summary = session.run(
         [optimizer, total_loss, output, merged_loss_summary_op],
-        feed_dict={inputs: train_data[0], labels: train_data[1], mask:dummy_mask}
+        feed_dict={inputs: train_data[0], labels: train_data[1], mask: dummy_mask}
     )
     log_writer.add_summary(loss_summary, iteration)
 
@@ -238,7 +238,7 @@ for iteration in range(ITERS+1):
             current = np.squeeze(np.array(current))
             zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
 
-       zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
+        zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
 
 print("Total time: {}".format(time.time() - start_time))
 
