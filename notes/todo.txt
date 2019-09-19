@@ -29,10 +29,17 @@ Teljesen egyszerű háló, minden nélkül
 Részfeladatok
 1. tanítóhalmaz
   a, epochonként (mondjuk öccázanként) kigyűjtjük (minden neuronra) a  hasznosságot, 
+  
   a, ezt a forward cikluson, és újraszámolni az egész halmazon
   b, epochszám, bemenő súlyvektor, kimenő súlyvektor, és a aktivitásmintázat a teljes adathalmazon (és a valós/prediktált címke)
   c, Javaslat: minden szám legyen különböző
   d, neurononként menteni esetleg, hogy ki milyen mélyen van (távolság a kimenettől és a bemenettől)
   e, 
 2. tanítás
+egyrétegű hálóval kezdjek
+később esetleg véletlen projekciót
+aktivitásmintázatot sorba rendezem
+néhány paraméteres görbét ráilleszteni a sorrendre (melyik az az exp görbe)
+minden címkére átlag és szórást, esetleg azt adni a 10k hosszú bemenetvektor helyett adni
+
 

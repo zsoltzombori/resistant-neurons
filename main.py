@@ -11,8 +11,8 @@ import data
 DATASET = "mnist"
 TRAINSIZE = 20000
 SEED = None
-BN_DO = 'DO'  # "BN" (batchnorm), "DO" (dropout), None
-BATCH_SIZE = 50
+BN_DO = None  # "BN" (batchnorm), "DO" (dropout), None
+BATCH_SIZE = 500
 DEPTH = 4
 WIDTH = 30
 OUTPUT_COUNT = 10
@@ -60,6 +60,8 @@ for k, v in [arg.split('=', 1) for arg in sys.argv[1:]]:
 ##########################################
 
 dummy_mask = np.ones((DEPTH, WIDTH))
+# dummy_mask[0, :] = np.zeros(WIDTH)
+# dummy_mask[0, 2:5] = np.ones(3)
 
 (X_train, y_train), (X_devel, y_devel), (X_test,
                                          y_test) = data.load_data(DATASET, SEED)
@@ -175,10 +177,14 @@ def evaluate(Xs, ys, BATCH_SIZE):
     eval_gen = data.classifier_generator((Xs, ys), BATCH_SIZE, infinity=False)
     _total_losses = []
     _total_acc = []
+    labels_to_return = [[], []]
     for X_batch, y_batch in eval_gen:
         value_list = session.run([total_loss, output, activations] + list(cov_ops),
                                  feed_dict={inputs: X_batch, labels: y_batch, mask: dummy_mask})
         (_total_loss, predicted, _activations) = value_list[:3]
+        # labels_to_return += [(y_batch, np.argmax(predicted, axis=1))]
+        labels_to_return[0] += [y_batch]
+        labels_to_return[1] += [np.argmax(predicted, axis=1)]
         _total_acc.append(accuracy(predicted, y_batch))
         _total_losses.append(_total_loss)
         for i, a in enumerate(_activations):
@@ -190,11 +196,47 @@ def evaluate(Xs, ys, BATCH_SIZE):
         nonzeros[i] = nonzeros[i] * 1.0 / (len(Xs))
         nonzeros[i] = np.histogram(nonzeros[i], bins=10, range=(0.0, 1.0))[0]
 
-    return eval_loss, eval_acc, nonzeros, activations, zs
+    return eval_loss, eval_acc, nonzeros, activations, zs, labels_to_return
+
+
+def evaluate_usefulness(Xs, ys, BATCH_SIZE, usefulness_mask):
+    for a in activations:
+        assert len(a.shape) == 2
+
+        _total_losses = []
+        _total_acc = []
+        # VERY QUCIK AND REAL DIRTY
+        # reinitializing eval_gen between calls is very costly, so we need to make an infinite one
+        # however, we lose deterministric results this way
+        # also, we manually have to specify when to stop in this cycle below
+        # it hurts me to do this
+        # TODO change the hardcoded number
+
+        i = 0
+        for X_batch, y_batch in EVAL_GEN:
+            if i >= np.ceil(1000.0/BATCH_SIZE):
+                break
+            value_list = session.run([total_loss, output, activations] + list(cov_ops),
+                                     feed_dict={inputs: X_batch, labels: y_batch, mask: usefulness_mask})
+            (_total_loss, predicted, _activations) = value_list[:3]
+            _total_acc.append(accuracy(predicted, y_batch))
+            _total_losses.append(_total_loss)
+            i += 1
+
+    eval_loss = np.mean(_total_losses)
+    eval_acc = np.mean(_total_acc)
+
+    return eval_loss, eval_acc
 
 
 def accuracy(predicted, expected):
     return float(np.sum(np.argmax(predicted, axis=1) == expected)) / len(predicted)
+
+
+def create_0_mask(dep, wid):
+    new_mask = np.ones((DEPTH, WIDTH))
+    new_mask[dep, wid] = 0
+    return(new_mask)
 
 
 start_time = time.time()
@@ -207,11 +249,11 @@ for iteration in range(ITERS+1):
         feed_dict={inputs: train_data[0], labels: train_data[1], mask: dummy_mask}
     )
     log_writer.add_summary(loss_summary, iteration)
-
+    iteration_no = 0
     # eval step
     if iteration % 500 == 0:
         train_acc = accuracy(predicted, train_data[1])
-        eval_loss, eval_acc, nonzeros, current_activations, current_zs = evaluate(
+        eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated = evaluate(
             X_devel, y_devel, BATCH_SIZE)
 
         # print(_total_loss)
@@ -239,6 +281,45 @@ for iteration in range(ITERS+1):
             zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
 
         zs_dict[iteration] = zs_evaluated[:, 1:, :].tolist()
+
+        #if iteration >= 1500:
+            #    raise Exception('we are stopping here')
+
+        usefulness_starttime = time.time()
+        EVAL_GEN = data.classifier_generator((X_devel, y_devel), BATCH_SIZE, infinity=True)
+        for d in range(DEPTH):
+            for w in range(WIDTH):
+                current_mask = create_0_mask(d, w)
+                u_eval_loss, u_eval_acc = evaluate_usefulness(X_devel, y_devel, BATCH_SIZE, current_mask)
+                if u_eval_acc == 0:
+                    usefulness_a = 0
+                else:
+                    usefulness_a = eval_acc/u_eval_acc
+
+                if eval_loss == 0:
+                    usefulness_l = 0
+                else:
+                    usefulness_l = u_eval_loss/eval_loss
+
+                # print(f"Loc: ({d}, {w}), loss and acc: {u_eval_loss:.3f}, {u_eval_acc:.3f}")
+                print(f"Loc: ({d}, {w}), acc and loss usefulness: {usefulness_a:.3f}, {usefulness_l:.3f}")
+                # print(f"Usefulness_in_a: {usefulness_a:.3f}")
+                # print(f"Usefulness_in_l: {usefulness_l:.3f}")
+                # if loss gets higher without neuron -> not useful = ratio < 1
+                # if accuracy gets lower without neuron -> not useful (reciprocated) = ratio < 1
+                usefulness_endtime = time.time()
+                usefulness_elapsed = usefulness_endtime-usefulness_starttime
+
+        print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
+              {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
+              subloop.""")
+        iteration_no += 1
+
+        # THINGS I NEED TO DUMP
+        # usefulness per neuron
+        # location per neuron
+        # input, output for each neuron
+        #
 
 print("Total time: {}".format(time.time() - start_time))
 
