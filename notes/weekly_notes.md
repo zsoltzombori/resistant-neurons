@@ -14,3 +14,6 @@ X_develnek megadhatom a batch sizeot
 Loss és az accuracy korre
 Az n+1-edik réteg aktiívációja az n-edik kimenő aktivációja
 
+## Otthoni munka:
+Bias termöket egyelőre ignorálom.
+
