@@ -1,0 +1,5 @@
+On the first 2 files on my computer: 0.94166, no compression
+Calculating the first 4 moments of the first 2 files: 0.802
+Calculating the first 4 moments on all files: 0.805
+Using first 500 predictions: 0.929
+
