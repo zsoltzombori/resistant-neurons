@@ -39,3 +39,8 @@ utánaolvasni, küldött Zsolt cikket slacken
 bolyonganak a neuronok
 dropouttal mi történik
 
+# 5. hét 
+Kétpupú eloszlás hogyan aránylik a félév eleji vonalas megfigyeléseimhez
+FMNIST
+Különböző osztályon belüliekre nézzem meg, meg FMNIST-en nézzem meg.
+
