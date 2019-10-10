@@ -12,13 +12,14 @@ DATASET = "fashion_mnist"
 TRAINSIZE = 60000
 SEED = None
 BN_DO = None  # "BN" (batchnorm), "DO" (dropout), None
-BATCH_SIZE = 50
+BATCH_SIZE = 500
 DEPTH = 4
 WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 1000
+ITERS = 500
+EVALUATION_CHECKPOINT = 10
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
 BN_WEIGHT = 0
@@ -29,7 +30,7 @@ EVALUATE_USEFULNESS = False
 USEFULNESS_EVAL_SET_SIZE = 1000
 
 os.system("rm -rf {}".format(LOG_DIR))
-os.nice(20)
+# os.nice(20)
 
 
 def heuristic_cast(s):
@@ -160,8 +161,8 @@ optimizer = tf.train.AdamOptimizer(
     learning_rate=LR
 ).minimize(total_loss)
 
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
+config = tf.ConfigProto(device_count={'GPU': 2})
+# config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
 session = tf.Session(config=config)
 print("NETWORK PARAMETER COUNT",
       np.sum([np.prod(v.shape) for v in tf.trainable_variables()]))
@@ -182,6 +183,7 @@ def evaluate(Xs, ys, BATCH_SIZE):
     _total_losses = []
     _total_acc = []
     labels_to_return = [[], []]
+    # print('we are before entering eval_gen')
     for X_batch, y_batch in eval_gen:
         value_list = session.run([total_loss, output, activations] + list(cov_ops),
                                  feed_dict={inputs: X_batch, labels: y_batch, mask: dummy_mask})
@@ -256,6 +258,8 @@ start_time = time.time()
 iteration_no = 0
 
 for iteration in range(ITERS+1):
+
+    # print(f'iteration number {iteration}')
     train_data = next(train_gen)
     # training step
     _, _total_loss, predicted, loss_summary = session.run(
@@ -266,10 +270,10 @@ for iteration in range(ITERS+1):
     usefulness_dict = dict([(f"{d} {w}", []) for d in range(DEPTH) for w in range(WIDTH)])
 
     # eval step
-    if iteration % 100 == 0:
+    if iteration % EVALUATION_CHECKPOINT == 0:
         train_acc = accuracy(predicted, train_data[1])
-        eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated = evaluate(
-            X_devel, y_devel, BATCH_SIZE)
+        eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated =\
+                evaluate(X_devel, y_devel, BATCH_SIZE)
 
         # print(_total_loss)
         # print('Total loss:{:.3f}, L reg:{}'.format(_total_loss,
@@ -345,11 +349,12 @@ for iteration in range(ITERS+1):
 
                     cumulative_dictionary[iteration_no][current_neuron] = temp_cum
 
-        print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
-              {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
-              subloop.""")
 
         if EVALUATE_USEFULNESS:
+
+            print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
+                  {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
+                  subloop.""")
             cumulative_dictionary[iteration_no]['original_labels'] = list(itertools.chain.from_iterable(labels_evaluated[0]))
             cumulative_dictionary[iteration_no]['predicted_labels'] = list(itertools.chain.from_iterable(labels_evaluated[1]))
 

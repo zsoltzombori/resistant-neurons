@@ -89,8 +89,10 @@ def classifier_generator(d, batch_size, infinity=True, augment=False):
         gen = datagen.flow(xs, ys, batch_size=batch_size, shuffle=True)
         while (i+1) * batch_size <= len(xs):
             x, y = gen.next()
+            # print(f'we are in {i} iteration of datagen')
             # yield np.reshape(x, [batch_size, -1]), y
             yield x, y
             i += 1
-            if not infinity:
-                break
+
+        if not infinity:
+            break
