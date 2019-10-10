@@ -1,5 +1,5 @@
 import numpy as np
-from keras.datasets import mnist, cifar10
+from keras.datasets import mnist, cifar10, fashion_mnist
 # import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -14,14 +14,20 @@ def load_data(dataset, seed=None):
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
         y_train = np.squeeze(y_train)
         y_test = np.squeeze(y_test)
+
+    elif dataset == "fashion_mnist":
+        (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
+        X_train = np.expand_dims(X_train, 3)
+        X_test = np.expand_dims(X_test, 3)
+
     else:
         assert False, "Unknown dataset: " + dataset
 
     # convert brightness values from bytes to floats between 0 and 1:
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
+        X_train /= 255
+        X_test /= 255
 
     # save last 10000 from X_train, y_train for development set
     if dataset == "cifar10" or dataset == "cifar100":
@@ -45,6 +51,7 @@ def load_data(dataset, seed=None):
         np.random.set_state(state)
 
     return (X_train, y_train), (X_devel, y_devel), (X_test, y_test)
+
 
 def classifier_generator(d, batch_size, infinity=True, augment=False):
     (xs, ys) = d
@@ -70,9 +77,9 @@ def classifier_generator(d, batch_size, infinity=True, augment=False):
             samplewise_std_normalization=False,
             zca_whitening=False,
             rotation_range=0,
-            width_shift_range=0.,#0.125,
-            height_shift_range=0.,#0.125,
-            horizontal_flip=False,#True,
+            width_shift_range=0.,  # 0.125,
+            height_shift_range=0.,  # 0.125,
+            horizontal_flip=False,  # True,
             vertical_flip=False,
             data_format="channels_last")
         datagen.fit(xs)
@@ -85,5 +92,5 @@ def classifier_generator(d, batch_size, infinity=True, augment=False):
             # yield np.reshape(x, [batch_size, -1]), y
             yield x, y
             i += 1
-        if not infinity:
-            break
+            if not infinity:
+                break

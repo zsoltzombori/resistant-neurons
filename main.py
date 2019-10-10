@@ -8,24 +8,26 @@ import itertools
 import networks
 import data
 
-DATASET = "mnist"
-TRAINSIZE = 20000
+DATASET = "fashion_mnist"
+TRAINSIZE = 60000
 SEED = None
 BN_DO = None  # "BN" (batchnorm), "DO" (dropout), None
-BATCH_SIZE = 500
+BATCH_SIZE = 50
 DEPTH = 4
 WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 10000
+ITERS = 1000
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
 BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
-USEFULNESS_EVAL_SET_SIZE = 10000
+EVALUATE_USEFULNESS = False
+USEFULNESS_EVAL_SET_SIZE = 1000
+
 os.system("rm -rf {}".format(LOG_DIR))
 os.nice(20)
 
@@ -264,7 +266,7 @@ for iteration in range(ITERS+1):
     usefulness_dict = dict([(f"{d} {w}", []) for d in range(DEPTH) for w in range(WIDTH)])
 
     # eval step
-    if iteration % 1000 == 0:
+    if iteration % 100 == 0:
         train_acc = accuracy(predicted, train_data[1])
         eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated = evaluate(
             X_devel, y_devel, BATCH_SIZE)
@@ -274,8 +276,8 @@ for iteration in range(ITERS+1):
         # session.run(reg_losses)))
         # print(session.run([reg_losses]))
         # print(tf.math.reduce_sum(reg_losses))
-        # print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
-        #    iteration, train_acc, eval_acc))
+        print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
+            iteration, train_acc, eval_acc))
         # print(zs)
         # print(f"HEREWEGO:{nonzeros}")
 
@@ -297,56 +299,59 @@ for iteration in range(ITERS+1):
         # zs_dict[iteration_no] = zs_evaluated[:, 1:, :].tolist()
         zs_dict[iteration_no] = zs_evaluated[:, 1:, :]
 
-        usefulness_starttime = time.time()
-        EVAL_GEN = data.classifier_generator((X_devel, y_devel), BATCH_SIZE, infinity=True)
-        cumulative_dictionary[iteration_no] = {}
+        if EVALUATE_USEFULNESS:
 
-        for d in range(DEPTH):
-            for w in range(WIDTH):
-                current_mask = create_0_mask(d, w)
-                u_eval_loss, u_eval_acc = evaluate_usefulness(X_devel, y_devel, current_mask)
-                if u_eval_acc == 0:
-                    usefulness_a = 0
-                else:
-                    usefulness_a = eval_acc/u_eval_acc
+            usefulness_starttime = time.time()
+            EVAL_GEN = data.classifier_generator((X_devel, y_devel), BATCH_SIZE, infinity=True)
+            cumulative_dictionary[iteration_no] = {}
 
-                if eval_loss == 0:
-                    usefulness_l = 0
-                else:
-                    usefulness_l = u_eval_loss/eval_loss
+            for d in range(DEPTH):
+                for w in range(WIDTH):
+                    current_mask = create_0_mask(d, w)
+                    u_eval_loss, u_eval_acc = evaluate_usefulness(X_devel, y_devel, current_mask)
+                    if u_eval_acc == 0:
+                        usefulness_a = 0
+                    else:
+                        usefulness_a = eval_acc/u_eval_acc
 
-                current_neuron = f"{d} {w}"
-                usefulness_dict[current_neuron] += [(usefulness_l, usefulness_a)]
+                    if eval_loss == 0:
+                        usefulness_l = 0
+                    else:
+                        usefulness_l = u_eval_loss/eval_loss
 
-                # print(f"Loc: ({d}, {w}), loss and acc: {u_eval_loss:.3f}, {u_eval_acc:.3f}")
-                # print(f"Loc: ({d}, {w}), acc and loss usefulness: {usefulness_a:.3f}, {usefulness_l:.3f}")
-                # print(f"Usefulness_in_a: {usefulness_a:.3f}")
-                # print(f"Usefulness_in_l: {usefulness_l:.3f}")
-                # if loss gets higher without neuron -> not useful = ratio < 1
-                # if accuracy gets lower without neuron -> not useful (reciprocated) = ratio < 1
-                usefulness_endtime = time.time()
-                usefulness_elapsed = usefulness_endtime-usefulness_starttime
-                in_w, ou_w = find_weights(d, w)
-                # CUMULATIVE_DICT SECTION
+                    current_neuron = f"{d} {w}"
+                    usefulness_dict[current_neuron] += [(usefulness_l, usefulness_a)]
 
-                temp_cum = {'activations': zs_dict[iteration_no][d, :, w].tolist(),
-                            'usefulness_loss': usefulness_l.tolist(),
-                            'usefulness_acc': usefulness_a.tolist(),
-                            'depth': d,
-                            'inverse_depth': DEPTH-1-d,
-                            'width': w,
-                            'input_weights': in_w.tolist(),
-                            'output_weights': ou_w.tolist(),
-                            'reg_loss_in_layer': session.run(reg_losses)[d].tolist()}
+                    # print(f"Loc: ({d}, {w}), loss and acc: {u_eval_loss:.3f}, {u_eval_acc:.3f}")
+                    # print(f"Loc: ({d}, {w}), acc and loss usefulness: {usefulness_a:.3f}, {usefulness_l:.3f}")
+                    # print(f"Usefulness_in_a: {usefulness_a:.3f}")
+                    # print(f"Usefulness_in_l: {usefulness_l:.3f}")
+                    # if loss gets higher without neuron -> not useful = ratio < 1
+                    # if accuracy gets lower without neuron -> not useful (reciprocated) = ratio < 1
+                    usefulness_endtime = time.time()
+                    usefulness_elapsed = usefulness_endtime-usefulness_starttime
+                    in_w, ou_w = find_weights(d, w)
+                    # CUMULATIVE_DICT SECTION
 
-                cumulative_dictionary[iteration_no][current_neuron] = temp_cum
+                    temp_cum = {'activations': zs_dict[iteration_no][d, :, w].tolist(),
+                                'usefulness_loss': usefulness_l.tolist(),
+                                'usefulness_acc': usefulness_a.tolist(),
+                                'depth': d,
+                                'inverse_depth': DEPTH-1-d,
+                                'width': w,
+                                'input_weights': in_w.tolist(),
+                                'output_weights': ou_w.tolist(),
+                                'reg_loss_in_layer': session.run(reg_losses)[d].tolist()}
+
+                    cumulative_dictionary[iteration_no][current_neuron] = temp_cum
 
         print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
               {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
               subloop.""")
 
-        cumulative_dictionary[iteration_no]['original_labels'] = list(itertools.chain.from_iterable(labels_evaluated[0]))
-        cumulative_dictionary[iteration_no]['predicted_labels'] = list(itertools.chain.from_iterable(labels_evaluated[1]))
+        if EVALUATE_USEFULNESS:
+            cumulative_dictionary[iteration_no]['original_labels'] = list(itertools.chain.from_iterable(labels_evaluated[0]))
+            cumulative_dictionary[iteration_no]['predicted_labels'] = list(itertools.chain.from_iterable(labels_evaluated[1]))
 
         iteration_no += 1
 
