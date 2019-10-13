@@ -18,8 +18,8 @@ WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 1000
-EVALUATION_CHECKPOINT = 100
+ITERS = 500
+EVALUATION_CHECKPOINT = 20
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
 BN_WEIGHT = 0
@@ -69,7 +69,7 @@ dummy_mask = np.ones((DEPTH, WIDTH))
 # dummy_mask[0, 2:5] = np.ones(3)
 
 (X_train, y_train), (X_devel, y_devel), (X_test,
-                                         y_test) = data.load_data(DATASET, SEED)
+                                         y_test) = data.load_data(DATASET, SEED, USEFULNESS_EVAL_SET_SIZE)
 
 X_train = X_train[:TRAINSIZE]
 y_train = y_train[:TRAINSIZE]
@@ -161,8 +161,8 @@ optimizer = tf.train.AdamOptimizer(
     learning_rate=LR
 ).minimize(total_loss)
 
-# config = tf.ConfigProto(device_count={'GPU': 2})
-config = tf.ConfigProto()
+config = tf.ConfigProto(device_count={'GPU': 2})
+# config = tf.ConfigProto()
 # config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
 session = tf.Session(config=config)
 print("NETWORK PARAMETER COUNT",
@@ -222,6 +222,7 @@ def evaluate_usefulness(Xs, ys, usefulness_mask):
         i = 0
         for X_batch, y_batch in EVAL_GEN:
             if i >= np.ceil(USEFULNESS_EVAL_SET_SIZE/BATCH_SIZE):
+                # print(f'breaking at epoch i: {i}')
                 break
             value_list = session.run([total_loss, output, activations] + list(cov_ops),
                                      feed_dict={inputs: X_batch, labels: y_batch, mask: usefulness_mask})
@@ -309,6 +310,8 @@ for iteration in range(ITERS+1):
             usefulness_starttime = time.time()
             EVAL_GEN = data.classifier_generator((X_devel, y_devel), BATCH_SIZE, infinity=True)
             cumulative_dictionary[iteration_no] = {}
+
+            # print(f'length of devel: {len(X_devel)}')
 
             for d in range(DEPTH):
                 for w in range(WIDTH):

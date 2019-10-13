@@ -4,7 +4,7 @@ from keras.datasets import mnist, cifar10, fashion_mnist
 from keras.preprocessing.image import ImageDataGenerator
 
 
-def load_data(dataset, seed=None):
+def load_data(dataset, seed=None, usefulness_set_size=10000):
     if dataset == "mnist":
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
         X_train = np.expand_dims(X_train, 3)
@@ -34,10 +34,10 @@ def load_data(dataset, seed=None):
         X_devel = X_test
         y_devel = y_test
     else:
-        X_devel = X_train[-10000:]
-        y_devel = y_train[-10000:]
-        X_train = X_train[:-10000]
-        y_train = y_train[:-10000]
+        X_devel = X_train[-usefulness_set_size:]
+        y_devel = y_train[-usefulness_set_size:]
+        X_train = X_train[:-usefulness_set_size]
+        y_train = y_train[:-usefulness_set_size]
 
     if seed is not None:
         state = np.random.get_state()

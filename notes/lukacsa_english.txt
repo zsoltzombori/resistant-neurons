@@ -1,0 +1,11 @@
+A projekt első részfeladata annak azonosítása, hogy tudjuk-e tanulás közben (kis számításigényű illetve már egyébként is kiszámított) jellemzők alapján megbecsülni, hogy egy adott neuron mennyire járul hozzá a hálózat teljesítményéhez. Itt sok adatbányászati illetve modellezési feladat van: fel kell deríteni, hogy mivel és mennyire tudjuk közelíteni a rendkívül költséges globális hasznosságot. A feladat magában foglalja a kísérletezéshez szükséges kódbázis kiépítését. Ez a feladat előkészíti a következő fázist, amikor már a detekción túl aktívan bele akarunk nyúlni a tanulási folyamatba hasznossági információ alapján.
+
+Our project is the analysis whether some neurons in a neural network can be classified as _useful_ and _useless_. 
+So far, we have a seemingly reliable usefulness measure, but we still have to run a lot of experiments. We focus on simple feed-forward networks in the beginning of this project, and we use toy datasets: MNIST and fashion-MNIST.
+Our current method is very costly to calculate, we seem to be able to predict the established usefulness measure using only the network's inside data during the training phase.
+We aim to predict this usefulness during the training phase of the neural network, ideally using some easy-to-calculate methods.
+Our goal is to find a way to reinitialize lazy and useless neurons to create a better network or to accelerate training.
+
+The codebase can be found under this github link: 
+https://github.com/zsoltzombori/resistant-neurons
+
