@@ -18,16 +18,16 @@ WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 500
-EVALUATION_CHECKPOINT = 10
+ITERS = 1000
+EVALUATION_CHECKPOINT = 100
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
 BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
-EVALUATE_USEFULNESS = False
-USEFULNESS_EVAL_SET_SIZE = 1000
+EVALUATE_USEFULNESS = True
+USEFULNESS_EVAL_SET_SIZE = 2000
 
 os.system("rm -rf {}".format(LOG_DIR))
 # os.nice(20)
@@ -161,7 +161,8 @@ optimizer = tf.train.AdamOptimizer(
     learning_rate=LR
 ).minimize(total_loss)
 
-config = tf.ConfigProto(device_count={'GPU': 2})
+# config = tf.ConfigProto(device_count={'GPU': 2})
+config = tf.ConfigProto()
 # config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
 session = tf.Session(config=config)
 print("NETWORK PARAMETER COUNT",
