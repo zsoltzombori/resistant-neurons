@@ -44,3 +44,33 @@ Kétpupú eloszlás hogyan aránylik a félév eleji vonalas megfigyeléseimhez
 FMNIST
 Különböző osztályon belüliekre nézzem meg, meg FMNIST-en nézzem meg.
 
+# 6.hét
+
+Főkomponens, kör, hasznos neuron, de már a tanítás elején percentilist, vagy a végső hasznosságok percentilisét vegyem?
+El kell kezdeni kísérletezni.
+Talán idősoros predikció? Szerintem egész jól lehetne.
+Az első 10 evaluációnál:
+Ha sortolom, 0.76450 az accuracy. Csak a globális eloszlásban ÉS terjedelemben annyi infó van.
+Ha nem, 0.846.
+
+Menthetőség, idősoros predikció, amúgy is predikció. 
+Mgegvan a hasznosság prediktorom ls utána újratanítok,
+Meg regresszió.
+Súlyoknak a statisztikája.
+Prediktor.
+Sok komponenssel normálissal közelítem.
+
+Mit érdemes kipróbálni a halottakra?
+- epochonként a prediktor mondja meg
+- véletlen inicializálás
+- visszatalál-e ugyanabba?
+- átskálázom a súlyokat
+- hasznos + zaj
+- 2 hasznos és lineáris kombinációja + zaj
+- genetikus algoritmus lépés, párokat sorsolok és azokat keresztezem, mindegyiken lesz mutaáció
+- mennyire veti ez vissza a háló teljesítményét
+- a kimenő és a bemenő súlyok is mozognak
+- nagyon óvatosan, 1 ilyenből hogyan regenerálódik, majd több
+- 
+
+

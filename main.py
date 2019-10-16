@@ -27,7 +27,7 @@ COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
 EVALUATE_USEFULNESS = True
-USEFULNESS_EVAL_SET_SIZE = 2000
+USEFULNESS_EVAL_SET_SIZE = 10000
 
 os.system("rm -rf {}".format(LOG_DIR))
 # os.nice(20)
