@@ -26,7 +26,7 @@ BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
-EVALUATE_USEFULNESS = True
+EVALUATE_USEFULNESS = False
 USEFULNESS_EVAL_SET_SIZE = 10000
 
 os.system("rm -rf {}".format(LOG_DIR))
@@ -258,6 +258,7 @@ cumulative_dictionary = {}
 
 start_time = time.time()
 iteration_no = 0
+saver = tf.train.Saver(max_to_keep=20)
 
 for iteration in range(ITERS+1):
 
@@ -275,8 +276,9 @@ for iteration in range(ITERS+1):
     if iteration % EVALUATION_CHECKPOINT == 0:
         train_acc = accuracy(predicted, train_data[1])
         eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated =\
-                evaluate(X_devel, y_devel, BATCH_SIZE)
+            evaluate(X_devel, y_devel, BATCH_SIZE)
 
+        saver.save(session, f'saved_models/{SESSION_NAME}', global_step=iteration)
         # print(_total_loss)
         # print('Total loss:{:.3f}, L reg:{}'.format(_total_loss,
         # session.run(reg_losses)))
@@ -288,7 +290,7 @@ for iteration in range(ITERS+1):
         # print(f"HEREWEGO:{nonzeros}")
 
         # for line in nonzeros:
-            #     print(' '.join(['{: <2}'.format(x) for x in line]))
+        #     print(' '.join(['{: <2}'.format(x) for x in line]))
 
         # print(current_zs)
         # print(len(X_devel))
@@ -353,30 +355,23 @@ for iteration in range(ITERS+1):
 
                     cumulative_dictionary[iteration_no][current_neuron] = temp_cum
 
-
         if EVALUATE_USEFULNESS:
 
             print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
                   {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
                   subloop.""")
-            cumulative_dictionary[iteration_no]['original_labels'] = list(itertools.chain.from_iterable(labels_evaluated[0]))
-            cumulative_dictionary[iteration_no]['predicted_labels'] = list(itertools.chain.from_iterable(labels_evaluated[1]))
+            cumulative_dictionary[iteration_no]['original_labels'] = list(
+                itertools.chain.from_iterable(labels_evaluated[0]))
+            cumulative_dictionary[iteration_no]['predicted_labels'] = list(
+                itertools.chain.from_iterable(labels_evaluated[1]))
 
         iteration_no += 1
 
         DEBUG = True
 
-        #if DEBUG:
-            #    if iteration_no >= 3:
-                #        raise Exception('STOPPING \'cos of debug flag')
-
-        # THINGS I NEED TO DUMP
-        # usefulness per neuron
-        # location per neuron
-        # input, output for each neuron
-        #
 
 print("Total time: {}".format(time.time() - start_time))
 
-with open('neuron_logs/train_data/output_{}.json'.format(time.strftime('%Y%m%d-%H%M%S')), 'w') as f:
-    json.dump(cumulative_dictionary, f)
+if EVALUATE_USEFULNESS:
+    with open('neuron_logs/train_data/output_{}.json'.format(SESSION_NAME), 'w') as f:
+        json.dump(cumulative_dictionary, f)
