@@ -18,7 +18,7 @@ WIDTH = 30
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 500
+ITERS = 100
 EVALUATION_CHECKPOINT = 20
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
@@ -31,35 +31,6 @@ USEFULNESS_EVAL_SET_SIZE = 10000
 
 os.system("rm -rf {}".format(LOG_DIR))
 # os.nice(20)
-
-
-def heuristic_cast(s):
-    s = s.strip()  # Don't let some stupid whitespace fool you.
-    if s == "None":
-        return None
-    elif s == "True":
-        return True
-    elif s == "False":
-        return False
-    try:
-        return int(s)
-    except ValueError:
-        pass
-    try:
-        return float(s)
-    except ValueError:
-        pass
-    return s
-
-
-for k, v in [arg.split('=', 1) for arg in sys.argv[1:]]:
-    assert v != '', "Malformed command line"
-    assert k.startswith('--'), "Malformed arg %s" % k
-    k = k[2:]
-    assert k in locals(), "Unknown arg %s" % k
-    v = heuristic_cast(v)
-    print("Changing argument %s from default %s to %s" % (k, locals()[k], v))
-    locals()[k] = v
 
 
 ##########################################
@@ -173,8 +144,7 @@ session.run(tf.local_variables_initializer())
 activations_dict = {}
 zs_dict = {}
 
-
-def evaluate(Xs, ys, BATCH_SIZE):
+def evaluate(Xs, ys, BATCH_SIZE, net_mask = dummy_mask):
     nonzeros = []
     for a in activations:
         assert len(a.shape) == 2
@@ -187,7 +157,7 @@ def evaluate(Xs, ys, BATCH_SIZE):
     # print('we are before entering eval_gen')
     for X_batch, y_batch in eval_gen:
         value_list = session.run([total_loss, output, activations] + list(cov_ops),
-                                 feed_dict={inputs: X_batch, labels: y_batch, mask: dummy_mask})
+                                 feed_dict={inputs: X_batch, labels: y_batch, mask: net_mask})
         (_total_loss, predicted, _activations) = value_list[:3]
         # labels_to_return += [(y_batch, np.argmax(predicted, axis=1))]
         labels_to_return[0] += [y_batch.tolist()]
@@ -216,8 +186,6 @@ def evaluate_usefulness(Xs, ys, usefulness_mask):
         # reinitializing eval_gen between calls is very costly, so we need to make an infinite one
         # however, we lose deterministric results this way
         # also, we manually have to specify when to stop in this cycle below
-        # it hurts me to do this
-        # TODO change the hardcoded number
 
         i = 0
         for X_batch, y_batch in EVAL_GEN:
@@ -254,14 +222,19 @@ def find_weights(d, w):
     return(input_weights, output_weights)
 
 
+
+        
+
 cumulative_dictionary = {}
 
 start_time = time.time()
+TRAIN_ITER = 0
 iteration_no = 0
 saver = tf.train.Saver(max_to_keep=20)
 
 for iteration in range(ITERS+1):
 
+    TRAIN_ITER = iteration
     # print(f'iteration number {iteration}')
     train_data = next(train_gen)
     # training step
@@ -355,8 +328,6 @@ for iteration in range(ITERS+1):
 
                     cumulative_dictionary[iteration_no][current_neuron] = temp_cum
 
-        if EVALUATE_USEFULNESS:
-
             print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
                   {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
                   subloop.""")
@@ -367,11 +338,92 @@ for iteration in range(ITERS+1):
 
         iteration_no += 1
 
-        DEBUG = True
-
 
 print("Total time: {}".format(time.time() - start_time))
+
+def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
+
+# makes one train iteration with logging;
+# useful for watching the effects of neuron changing
+# target can be 'train' or 'valid'
+
+
+
+    if target == 'train':
+        train_data = next(train_gen)
+        # training step
+        _, _total_loss, predicted, loss_summary = session.run(
+            [optimizer, total_loss, output, merged_loss_summary_op],
+            feed_dict={inputs: train_data[0], labels: train_data[1], mask: net_mask}
+        )
+        global TRAIN_ITER
+        TRAIN_ITER += 1
+        
+
+    # eval step
+
+    eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated =\
+        evaluate(X_devel, y_devel, BATCH_SIZE)
+    # print()
+    if TRAIN_ITER % logging == 0:
+        if target == 'train':
+            print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
+                TRAIN_ITER, train_acc, eval_acc))
+        else:
+            print("{:>5}:  dev acc {:.2f}".format(
+                TRAIN_ITER, eval_acc))
+
+
+
+
+d, w = 0, 3
+trainables = dict([(v.name, v) for v in tf.trainable_variables()])
+input_weights = session.run(trainables[f"dense_{d}/kernel:0"])[:, w]
+output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
+
+zero_mask = np.ones((DEPTH, WIDTH))
+
+for d in range(4):
+    for w in range(0, 30, 3):
+        zero_mask[d, w] = 0
+
+make_1_iteration(net_mask=zero_mask)
+
+
+for d in range(4):
+    for w in range(0, 30, 5):
+        make_1_iteration()
+        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
+        tensor_values = session.run(v1)
+        tensor_values[:, w] = np.zeros(tensor_values[:, w].shape)
+        session.run(tf.assign(v1, tensor_values))
+
+zeros = 0
+for d in range(4):
+    for w in range(0, 30):
+        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
+        tensor_values = session.run(v1)
+        if all(tensor_values == np.zeros(tensor_values.shape)):
+            zeros += 1
+
+print(zeros)
+
+tensor = v1[:, 3]
+make_1_iteration()
+session.run(tensor).shape
+v1 = v1[:, 3].assign(tf.zeros(v1[:, 3].shape))
+session.run(tf.assign(v1[:, 3], tf.zeros(v1[:, 3].shape)))
+
+session.run(tf.assign(v1[2, 5], tf.Variable(initial_value=np.zeros(1), trainable=True)))
+
+make_1_iteration()
+for i in range(200):
+    make_1_iteration('train', logging = 20)
+
+
+make_1_iteration()
 
 if EVALUATE_USEFULNESS:
     with open('neuron_logs/train_data/output_{}.json'.format(SESSION_NAME), 'w') as f:
         json.dump(cumulative_dictionary, f)
+
