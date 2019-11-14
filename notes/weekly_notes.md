@@ -73,4 +73,13 @@ Mit érdemes kipróbálni a halottakra?
 - nagyon óvatosan, 1 ilyenből hogyan regenerálódik, majd több
 - 
 
+# 9. hét
+
+-1-1-re skálázzam át, és ott prediktálgassak, standardizáljak
+MSE helyett más, MAE mondjuk
+A rétegtársak közti hasznosságot nézzük meg, és a prediktor rangsort sorol
+Hiba az osztályozóban, milyen a megoszlása rétegeken belül
+
+-- társadalmi mobilitás neurális hálókban
+Laptopszalon, kontakt, felszámolás
 
