@@ -51,7 +51,7 @@ inputs = tf.placeholder(tf.float32, shape=[BATCH_SIZE] + list(INPUT_SHAPE))
 mask = tf.placeholder(tf.float32, shape=[DEPTH, WIDTH])
 if CLASSIFIER_TYPE == "dense":
     output, activations, zs = networks.DenseNet(inputs, DEPTH, WIDTH, BN_DO,
-                                                OUTPUT_COUNT, dropout=0.5, mask=mask)
+                                                OUTPUT_COUNT, dropout=0.0, mask=mask)
 elif CLASSIFIER_TYPE == "conv":
     output, activations, zs = networks.LeNet(
         inputs, BN_DO, OUTPUT_COUNT, dropout=0.8)
@@ -240,7 +240,7 @@ for iteration in range(ITERS+1):
     # training step
     _, _total_loss, predicted, loss_summary = session.run(
         [optimizer, total_loss, output, merged_loss_summary_op],
-        feed_dict={inputs: train_data[0], labels: train_data[1], mask: dummy_mask}
+        feed_dict={inputs: train_data[0], labels: train_data[1], mask: np.zeros((4, 30))} 
     )
     log_writer.add_summary(loss_summary, iteration)
     usefulness_dict = dict([(f"{d} {w}", []) for d in range(DEPTH) for w in range(WIDTH)])
@@ -257,7 +257,7 @@ for iteration in range(ITERS+1):
         # session.run(reg_losses)))
         # print(session.run([reg_losses]))
         # print(tf.math.reduce_sum(reg_losses))
-        print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
+        print("{:>5}:    train acc {:.3f}    dev acc {:.3f}".format(
             iteration, train_acc, eval_acc))
         # print(zs)
         # print(f"HEREWEGO:{nonzeros}")
@@ -343,10 +343,9 @@ print("Total time: {}".format(time.time() - start_time))
 
 def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
 
-# makes one train iteration with logging;
-# useful for watching the effects of neuron changing
-# target can be 'train' or 'valid'
-
+    # makes one train iteration with logging;
+    # useful for watching the effects of neuron changing
+    # target can be 'train' or 'valid'
 
 
     if target == 'train':
@@ -356,6 +355,7 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
             [optimizer, total_loss, output, merged_loss_summary_op],
             feed_dict={inputs: train_data[0], labels: train_data[1], mask: net_mask}
         )
+        train_acc = accuracy(predicted, train_data[1])
         global TRAIN_ITER
         TRAIN_ITER += 1
         
@@ -363,32 +363,44 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
     # eval step
 
     eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated =\
-        evaluate(X_devel, y_devel, BATCH_SIZE)
+        evaluate(X_devel, y_devel, BATCH_SIZE, net_mask = net_mask)
     # print()
     if TRAIN_ITER % logging == 0:
         if target == 'train':
-            print("{:>5}:    train acc {:.2f}    dev acc {:.2f}".format(
+            print("{:>5}:    train acc {:.3f}    dev acc {:.3f}".format(
                 TRAIN_ITER, train_acc, eval_acc))
         else:
-            print("{:>5}:  dev acc {:.2f}".format(
+            print("{:>5}:  dev acc {:.3f}".format(
                 TRAIN_ITER, eval_acc))
 
 
 
 
-d, w = 0, 3
+d, w = 1, 0
 trainables = dict([(v.name, v) for v in tf.trainable_variables()])
+trainables_vals = session.run(trainables[f"dense_{d}/kernel:0"])
 input_weights = session.run(trainables[f"dense_{d}/kernel:0"])[:, w]
 output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
-
+#print(input_weights)
+#print(output_weights)
 zero_mask = np.ones((DEPTH, WIDTH))
 
 for d in range(4):
-    for w in range(0, 30, 3):
-        zero_mask[d, w] = 0
+    for w in range(30):
+        zero_mask[d, w] = int(np.random.random()>(1-0.0))
+
+print(f"{np.sum(zero_mask == 0)}/{np.prod(zero_mask.shape)}")
+print(np.sum(zero_mask == 0, axis=1))
 
 make_1_iteration(net_mask=zero_mask)
+make_1_iteration(target='train', net_mask=zero_mask)
 
+trainables_new = dict([(v.name, v) for v in tf.trainable_variables()])
+trainables_vals_new = session.run(trainables_new[f"dense_{d}/kernel:0"])
+print(trainables_vals_new)
+print(trainables_vals == trainables_vals_new)
+for iteration in range(100):
+    make_1_iteration(target='train', logging=20, net_mask=zero_mask)
 
 for d in range(4):
     for w in range(0, 30, 5):
@@ -398,13 +410,11 @@ for d in range(4):
         tensor_values[:, w] = np.zeros(tensor_values[:, w].shape)
         session.run(tf.assign(v1, tensor_values))
 
-zeros = 0
-for d in range(4):
-    for w in range(0, 30):
-        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
-        tensor_values = session.run(v1)
-        if all(tensor_values == np.zeros(tensor_values.shape)):
-            zeros += 1
+for weight_layer_name in trainables.keys():
+    v1 = session.graph.get_tensor_by_name(weight_layer_name)
+    tensor_values = session.run(v1)
+    print(tensor_values.shape)
+    session.run(tf.assign(v1, np.ones(tensor_values.shape)))
 
 print(zeros)
 
