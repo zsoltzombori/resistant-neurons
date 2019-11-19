@@ -83,3 +83,6 @@ Hiba az osztályozóban, milyen a megoszlása rétegeken belül
 -- társadalmi mobilitás neurális hálókban
 Laptopszalon, kontakt, felszámolás
 
+# 10. hét
+
+Esetleg unsupervised klaszterezése a neuronoknak?

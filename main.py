@@ -13,6 +13,7 @@ import gzip, sklearn
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import reviving
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -232,10 +233,7 @@ def find_weights(d, w):
     input_weights = session.run(trainables[f"dense_{d}/kernel:0"])[:, w]
     output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
     return(input_weights, output_weights)
-
-
-
-        
+   
 
 cumulative_dictionary = {}
 
@@ -385,152 +383,20 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
             print("{:>5}:  dev acc {:.3f}".format(
                 TRAIN_ITER, eval_acc))
 
-useless_neurons = []
-
-# gathering data
-eval_loss, eval_acc, nonzeros, current_activations, current_zs, labels_evaluated =\
-            evaluate(X_devel, y_devel, BATCH_SIZE)
-
-zs_evaluated = np.empty((DEPTH, 1, WIDTH))
-for i in range(0, len(X_devel), BATCH_SIZE):
-    current = [session.run([current_zs],
-                            feed_dict={inputs: X_devel[i:i+BATCH_SIZE],
-                                        labels: y_devel[i:i+BATCH_SIZE],
-                                        mask: dummy_mask})]
-    current = np.squeeze(np.array(current))
-    zs_evaluated = np.concatenate((zs_evaluated, current), axis=1)
-
-# zs_dict[iteration][depth][no_of_images][width]
-# zs_dict[iteration_no] = zs_evaluated[:, 1:, :].tolist()
-neuron_activations = zs_evaluated[:, 1:, :]
-neuron_data = []
-
-for d in range(DEPTH):
-    for w in range(WIDTH):
-        current_neuron = [d, DEPTH-1-d, w, session.run(reg_losses)[d].tolist()]
-        #print(list(neuron_activations[d, :, w]))
-        # TODO BIG HACK, DON'T DO, MISSAVED THE REGRESSOR AND NOW IT'S LIKE THIS
-        # WILL FIX IT
-        current_neuron += list(neuron_activations[d, :, w])[:999]
-        neuron_data += [current_neuron]
-
-# need sklearn predictor and tactics, but everything is going well
-reg = joblib.load('Neuron_predictor/sklearn_logreg/best_regressor_sklearn.joblib')
-scaler = joblib.load('Neuron_predictor/sklearn_logreg/nn_activations_scaler_sklearn.joblib')
-print(np.array(neuron_data).shape)
-
-neuron_data = scaler.transform(neuron_data)
-usefulness_per_neuron = reg.predict(neuron_data)
-
-def classificate_neurons(neuron_usefulnesses, percentage):
-
-    """percentage means neurons to classify as useful
-    """
-
-    neurons_per_layers = [neuron_usefulnesses[x:x+WIDTH] for x in range(0, WIDTH*DEPTH, WIDTH)]
-    for i, l in enumerate(neurons_per_layers):
-        threshold = np.percentile(l, percentage)
-        neurons_per_layers[i] = np.array(l > threshold, dtype = int)
-
-    return(np.array(neurons_per_layers))
-
-classifications = classificate_neurons(usefulness_per_neuron, 10)
-
-
-
-trainables = dict([(v.name, v) for v in tf.trainable_variables()])
-
-# some rudimentary lööps
-
-#randomize
-
-#TODO what to do with double-updating? Treat first or last layer differently?
-
-for d in range(DEPTH):
-
-    input_weight_matrix = session.run(trainables[f"dense_{d}/kernel:0"])
-    output_weight_matrix = session.run(trainables[f"dense_{d+1}/kernel:0"])
-    new_input_layer, new_output_layer = input_weight_matrix.copy(), output_weight_matrix.copy()
-
-    for w in range(WIDTH):
-        if classifications[d, w] == 0:
-            input_weights = input_weight_matrix[:, w]
-            output_weights = output_weight_matrix[w, :]
-            good_neurons = np.argwhere(classifications[d] == 1).flatten()
-            # original_input_sumweight = 
-            new_input_weights = np.random.normal(np.median(input_weights), np.std(input_weights), len(input_weights))
-            new_output_weights = np.random.normal(np.median(output_weights), np.std(output_weights), len(output_weights))
-            new_input_layer[:, w] = new_input_weights
-            new_output_layer[w, :] = new_output_weights
-
-    print(d)
-    input_tensor = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
-    output_tensor = session.graph.get_tensor_by_name(f"dense_{d+1}/kernel:0")
-    session.run(tf.assign(input_tensor, np.array(new_input_layer)))
-    session.run(tf.assign(output_tensor, np.array(new_output_layer)))
-
 
 make_1_iteration()
 for i in range(200):
-    make_1_iteration('train', logging = 20)
-
-
-
-d, w = 1, 0
-
-trainables_vals = session.run(trainables[f"dense_{d}/kernel:0"])
-input_weights = session.run(trainables[f"dense_{d}/kernel:0"])[:, w]
-output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
-#print(input_weights)
-#print(output_weights)
-zero_mask = np.ones((DEPTH, WIDTH))
-
-for d in range(4):
-    for w in range(30):
-        zero_mask[d, w] = int(np.random.random()>(1-0.0))
-
-print(f"{np.sum(zero_mask == 0)}/{np.prod(zero_mask.shape)}")
-print(np.sum(zero_mask == 0, axis=1))
- 
-make_1_iteration(net_mask=zero_mask)
-make_1_iteration(target='train', net_mask=zero_mask)
-
-trainables_new = dict([(v.name, v) for v in tf.trainable_variables()])
-trainables_vals_new = session.run(trainables_new[f"dense_{d}/kernel:0"])
-print(trainables_vals_new)
-print(trainables_vals == trainables_vals_new)
-for iteration in range(100):
-    make_1_iteration(target='train', logging=20, net_mask=zero_mask)
-
-for d in range(4):
-    for w in range(0, 30, 5):
+    
+    make_1_iteration('train', logging = 10)
+    if i % 50 == 0:
+        usefulness_per_neuron = reviving.get_data_and_predict(session, X_devel, y_devel, BATCH_SIZE, DEPTH, WIDTH, 
+                        inputs, labels, mask, dummy_mask, reg_losses, evaluate)
+        classifications = reviving.classificate_neurons(usefulness_per_neuron, 25, WIDTH, DEPTH)
+        trainables = dict([(v.name, v) for v in tf.trainable_variables()])
+        reviving.revive_bad_randomized(session, DEPTH, WIDTH, trainables, classifications)
         make_1_iteration()
-        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
-        tensor_values = session.run(v1)
-        tensor_values[:, w] = np.zeros(tensor_values[:, w].shape)
-        session.run(tf.assign(v1, tensor_values))
-
-for weight_layer_name in trainables.keys():
-    v1 = session.graph.get_tensor_by_name(weight_layer_name)
-    tensor_values = session.run(v1)
-    print(tensor_values.shape)
-    session.run(tf.assign(v1, np.ones(tensor_values.shape)))
 
 
-tensor = v1[:, 3]
-make_1_iteration()
-session.run(tensor).shape
-v1 = v1[:, 3].assign(tf.zeros(v1[:, 3].shape))
-session.run(tf.assign(v1[:, 3], tf.zeros(v1[:, 3].shape)))
-
-session.run(tf.assign(v1[2, 5], tf.Variable(initial_value=np.zeros(1), trainable=True)))
-
-make_1_iteration()
-for i in range(200):
-    make_1_iteration('train', logging = 20)
-
-
-make_1_iteration()
 
 if EVALUATE_USEFULNESS:
     with open('neuron_logs/train_data/output_{}.json'.format(SESSION_NAME), 'w') as f:
