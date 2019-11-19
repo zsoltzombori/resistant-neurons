@@ -12,24 +12,10 @@ import itertools
 import sklearn
 import pandas as pd
 import scipy.stats as stats
-
-#from keras import Sequential
-#from keras.layers import Dense
-#from keras.wrappers.scikit_learn import KerasRegressor
-
 import gzip
 
-
-# In[2]:
-
-
 neuron_data = {}
-
 files = sorted(os.listdir('../neuron_logs/train_data'))
-
-
-# In[3]:
-
 
 def reduce_to_statistics(activations, labels, debug=False):
     sorted_data = []
@@ -46,10 +32,6 @@ def reduce_to_statistics(activations, labels, debug=False):
                        curr_stats.minmax[1], curr_stats.nobs]
         #print(statistics)
     return(statistics)
-
-
-# In[6]:
-
 
 def extract_data(filename, fin = 10, activations_no = 1000, target = 'usefulness_loss', shuffle = True):
     
@@ -81,9 +63,6 @@ def extract_data(filename, fin = 10, activations_no = 1000, target = 'usefulness
     return(features)
 
 
-# In[ ]:
-
-
 import csv 
 
 with gzip.open('test_data_2.gz', 'wt', compresslevel=5) as f:
@@ -94,10 +73,6 @@ with gzip.open('test_data_2.gz', 'wt', compresslevel=5) as f:
         for line in data:
             writer.writerow(line)
     
-
-
-# In[ ]:
-
 
 
 
