@@ -349,6 +349,8 @@ for iteration in range(ITERS+1):
         iteration_no += 1
 
 
+
+
 print("Total time: {}".format(time.time() - start_time))
 
 def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
@@ -384,17 +386,19 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
                 TRAIN_ITER, eval_acc))
 
 
+
 make_1_iteration()
+usefulness_per_neuron = reviving.get_data_and_predict(session, X_devel, y_devel, BATCH_SIZE, DEPTH, WIDTH, 
+                inputs, labels, mask, dummy_mask, reg_losses, evaluate)
+classifications = reviving.classificate_neurons(usefulness_per_neuron, 50, WIDTH, DEPTH)
+trainables = dict([(v.name, v) for v in tf.trainable_variables()])
+reviving.revive_genetic_algorithm_good_plus_good(session, DEPTH, WIDTH, trainables, classifications)
+make_1_iteration()
+
 for i in range(200):
     
-    make_1_iteration('train', logging = 10)
-    if i % 50 == 0:
-        usefulness_per_neuron = reviving.get_data_and_predict(session, X_devel, y_devel, BATCH_SIZE, DEPTH, WIDTH, 
-                        inputs, labels, mask, dummy_mask, reg_losses, evaluate)
-        classifications = reviving.classificate_neurons(usefulness_per_neuron, 25, WIDTH, DEPTH)
-        trainables = dict([(v.name, v) for v in tf.trainable_variables()])
-        reviving.revive_bad_randomized(session, DEPTH, WIDTH, trainables, classifications)
-        make_1_iteration()
+    make_1_iteration('train', logging = 20)
+    
 
 
 

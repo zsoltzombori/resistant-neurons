@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np 
 import joblib
 import sklearn
+import random
 
 def classificate_neurons(neuron_usefulnesses, percentage, WIDTH, DEPTH):
 
@@ -14,6 +15,7 @@ def classificate_neurons(neuron_usefulnesses, percentage, WIDTH, DEPTH):
         neurons_per_layers[i] = np.array(l > threshold, dtype = int)
 
     return(np.array(neurons_per_layers))
+
 
 def revive_bad_randomized(session, DEPTH, WIDTH, trainables, classifications):
     
@@ -40,6 +42,105 @@ def revive_bad_randomized(session, DEPTH, WIDTH, trainables, classifications):
         session.run(tf.assign(input_tensor, np.array(new_input_layer)))
         session.run(tf.assign(output_tensor, np.array(new_output_layer)))
 
+
+def revive_clone_good_with_noise(session, DEPTH, WIDTH, trainables, classifications):
+
+    for d in range(DEPTH):
+        
+        
+        input_weight_matrix = session.run(trainables[f"dense_{d}/kernel:0"])
+        output_weight_matrix = session.run(trainables[f"dense_{d+1}/kernel:0"])
+        new_input_layer, new_output_layer = input_weight_matrix.copy(), output_weight_matrix.copy()
+        good_neurons = np.argwhere(classifications[d] == 1).flatten()
+    
+        for w in range(WIDTH):
+            if classifications[d, w] == 0:
+                input_weights = input_weight_matrix[:, w]
+                output_weights = output_weight_matrix[w, :]
+                
+                examplary_neuron = random.choice(good_neurons)
+                good_neuron_input_weights = input_weight_matrix[:, examplary_neuron]
+                good_neuron_output_weights = output_weight_matrix[examplary_neuron, :]
+                # original_input_sumweight = 
+                new_input_weights = good_neuron_input_weights + np.random.normal(0, np.std(input_weights), len(input_weights))
+                new_output_weights = good_neuron_output_weights + np.random.normal(0, np.std(output_weights), len(output_weights))
+                new_input_layer[:, w] = new_input_weights
+                new_output_layer[w, :] = new_output_weights
+                # print(f'replaced {d}:{w} bad neuron with noise + {d}:{examplary_neuron} good neuron')
+
+        # print(d)
+        input_tensor = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
+        output_tensor = session.graph.get_tensor_by_name(f"dense_{d+1}/kernel:0")
+        session.run(tf.assign(input_tensor, np.array(new_input_layer)))
+        session.run(tf.assign(output_tensor, np.array(new_output_layer)))
+
+
+def revive_genetic_algorithm_good_plus_bad(session, DEPTH, WIDTH, trainables, classifications):
+
+    for d in range(DEPTH):
+        
+        input_weight_matrix = session.run(trainables[f"dense_{d}/kernel:0"])
+        output_weight_matrix = session.run(trainables[f"dense_{d+1}/kernel:0"])
+        new_input_layer, new_output_layer = input_weight_matrix.copy(), output_weight_matrix.copy()
+        good_neurons = np.argwhere(classifications[d] == 1).flatten()
+    
+        for w in range(WIDTH):
+            if classifications[d, w] == 0:
+                input_weights = input_weight_matrix[:, w]
+                output_weights = output_weight_matrix[w, :]
+                
+                examplary_neuron = random.choice(good_neurons)
+                good_neuron_input_weights = input_weight_matrix[:, examplary_neuron]
+                good_neuron_output_weights = output_weight_matrix[examplary_neuron, :]
+                # original_input_sumweight = 
+                new_input_weights = good_neuron_input_weights + input_weights + np.random.normal(0, np.std(input_weights), len(input_weights))
+                new_output_weights = good_neuron_output_weights + output_weights + np.random.normal(0, np.std(output_weights), len(output_weights))
+                new_input_layer[:, w] = new_input_weights
+                new_output_layer[w, :] = new_output_weights
+                # print(f'added {d}:{examplary_neuron} to {d}:{w} bad neuron with noise')
+
+        # print(d)
+        input_tensor = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
+        output_tensor = session.graph.get_tensor_by_name(f"dense_{d+1}/kernel:0")
+        session.run(tf.assign(input_tensor, np.array(new_input_layer)))
+        session.run(tf.assign(output_tensor, np.array(new_output_layer)))
+
+
+def revive_genetic_algorithm_good_plus_good(session, DEPTH, WIDTH, trainables, classifications):
+
+    for d in range(DEPTH):
+        
+        input_weight_matrix = session.run(trainables[f"dense_{d}/kernel:0"])
+        output_weight_matrix = session.run(trainables[f"dense_{d+1}/kernel:0"])
+        new_input_layer, new_output_layer = input_weight_matrix.copy(), output_weight_matrix.copy()
+        good_neurons = np.argwhere(classifications[d] == 1).flatten()
+    
+        for w in range(WIDTH):
+            if classifications[d, w] == 0:
+                sum_w = np.random.random()
+                input_weights = input_weight_matrix[:, w]
+                output_weights = output_weight_matrix[w, :]
+                
+                n1 = random.choice(good_neurons)
+                n1_input_weights = input_weight_matrix[:, n1]
+                n1_output_weights = output_weight_matrix[n1, :]
+
+                n2 = random.choice(good_neurons)
+                n2_input_weights = input_weight_matrix[:, n2]
+                n2_output_weights = output_weight_matrix[n2, :]
+
+                # original_input_sumweight = 
+                new_input_weights  = sum_w * n1_input_weights + (1 - sum_w) * n2_input_weights + np.random.normal(0, 0.1, len(input_weights))
+                new_output_weights = sum_w * n1_output_weights + (1 - sum_w) * n2_output_weights + np.random.normal(0, 0.1, len(output_weights))
+                new_input_layer[:, w] = new_input_weights
+                new_output_layer[w, :] = new_output_weights
+                print(f'replace {d}:{w} with sum of {d}:{n1} and {d}:{n2} with weight {sum_w:.3f}')
+
+        # print(d)
+        input_tensor = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
+        output_tensor = session.graph.get_tensor_by_name(f"dense_{d+1}/kernel:0")
+        session.run(tf.assign(input_tensor, np.array(new_input_layer)))
+        session.run(tf.assign(output_tensor, np.array(new_output_layer)))
 
 
 def get_data_and_predict(session, X_devel, y_devel, BATCH_SIZE, DEPTH, WIDTH, 
