@@ -86,3 +86,22 @@ Laptopszalon, kontakt, felszámolás
 # 10. hét
 
 Esetleg unsupervised klaszterezése a neuronoknak?
+
+Kicsit tovább pörgessem a neuronokat léptetésnél
+
+Hogyan működik a beépített inicializáció?
+Kicsi beavatkzás kell
+Próbáljuk meg egy neuron
+Seedeket nézzem meg.
+És ha determinisztikus, akkor az elején sorsoljam újra a neuront
+Train loss és dev loss
+
+A vektorokat összefésülöm, tehát vektorkoordinátákat választok
+Esetleg figyelhetek a nagyságrendbe, mindig a kisebbet/nagyobbat
+A bemeneti vektorokat buzeráljam, a logit réteget hagyjam békén
+Az első rétegekbe jobban belenyúlhatok, mint a végébe
+Próbáljak meg más randomot, mondjuk uniformat
+
+Tehát akkor:
+koncentráljak a legrosszabbra, különböző taktikákkal
+Pusztán a háló életének a leírására ez egy jó szemüveg-e.

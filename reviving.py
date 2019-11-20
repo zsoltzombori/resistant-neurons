@@ -93,8 +93,8 @@ def revive_genetic_algorithm_good_plus_bad(session, DEPTH, WIDTH, trainables, cl
                 good_neuron_input_weights = input_weight_matrix[:, examplary_neuron]
                 good_neuron_output_weights = output_weight_matrix[examplary_neuron, :]
                 # original_input_sumweight = 
-                new_input_weights = good_neuron_input_weights + input_weights + np.random.normal(0, np.std(input_weights), len(input_weights))
-                new_output_weights = good_neuron_output_weights + output_weights + np.random.normal(0, np.std(output_weights), len(output_weights))
+                new_input_weights = good_neuron_input_weights/2 + input_weights/2 + np.random.normal(0, np.std(input_weights), len(input_weights))/2
+                new_output_weights = good_neuron_output_weights/2 + output_weights/2 + np.random.normal(0, np.std(output_weights), len(output_weights))
                 new_input_layer[:, w] = new_input_weights
                 new_output_layer[w, :] = new_output_weights
                 # print(f'added {d}:{examplary_neuron} to {d}:{w} bad neuron with noise')

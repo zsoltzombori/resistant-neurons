@@ -392,7 +392,7 @@ usefulness_per_neuron = reviving.get_data_and_predict(session, X_devel, y_devel,
                 inputs, labels, mask, dummy_mask, reg_losses, evaluate)
 classifications = reviving.classificate_neurons(usefulness_per_neuron, 50, WIDTH, DEPTH)
 trainables = dict([(v.name, v) for v in tf.trainable_variables()])
-reviving.revive_genetic_algorithm_good_plus_good(session, DEPTH, WIDTH, trainables, classifications)
+reviving.revive_genetic_algorithm_good_plus_bad(session, DEPTH, WIDTH, trainables, classifications)
 make_1_iteration()
 
 for i in range(200):
