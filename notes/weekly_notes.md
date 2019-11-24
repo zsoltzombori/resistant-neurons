@@ -105,3 +105,5 @@ Próbáljak meg más randomot, mondjuk uniformat
 Tehát akkor:
 koncentráljak a legrosszabbra, különböző taktikákkal
 Pusztán a háló életének a leírására ez egy jó szemüveg-e.
+
+Vizualizáció: x tengelyen neuron index, y tengelyen hasznosság két görbében, és animál!
