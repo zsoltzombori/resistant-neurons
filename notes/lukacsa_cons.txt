@@ -12,3 +12,21 @@ Egy rövid bekezdés angolul, hogy mit csinálunk. Egy képet is jó lenne.
 Irodalmi körítés, hogy nagyjából hol helyezkedik el!
 Minél gyorsabban.
 
+
+Hasznosság kimaszkolás
+
+X tengely idő, y tengely hasznosság, interaktívan kiválasztom, hogy mely neuronok
+Esetleg megfordítani a ReLU-t (negatívat engedje át, a pozitív legyen 0)
+Egy-egy súlynak hogyan alakul a görbéje
+Bemenethez közeliekhez jobban/kevésbé tudunk prediktálni
+Intelligens dropout
+Batchsize megvariálása esetleg
+Esetleg leragasztani a jókat?
+Súlyok sorrendjét randomizálni
+Nem minden kiindulóállapot ekvivalens
+
+
+
+Megkeverni
+Mert a periodicitás fura
+
