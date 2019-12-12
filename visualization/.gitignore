@@ -1,1 +1,6 @@
-best_model.pt optimizer.pt
+best_model.pt 
+optimizer.pt
+*.pt
+usefulness_movie
+usefulness_after40
+usefulness_sorted

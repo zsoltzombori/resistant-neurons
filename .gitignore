@@ -102,3 +102,8 @@ ENV/
 *.swp
 *.swo
 saved_models/
+Neuron_predictor/sklearn_logreg/nn_activations_scaler_sklearn.joblib
+Neuron_predictor/sklearn_logreg/nn_activations_scaler_sklearn_after40.joblib
+Neuron_predictor/sklearn_logreg/best_regressor_sklearn.joblib
+Neuron_predictor/sklearn_logreg/best_regressor_sklearn_after40.joblib
+visualization/test_0.mp4

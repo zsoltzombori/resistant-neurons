@@ -107,3 +107,13 @@ koncentráljak a legrosszabbra, különböző taktikákkal
 Pusztán a háló életének a leírására ez egy jó szemüveg-e.
 
 Vizualizáció: x tengelyen neuron index, y tengelyen hasznosság két görbében, és animál!
+
+# 11. het
+
+Kik azok, akik az elmúlt 3 mérésen át az alsó 10 százalékban voltak
+A súlyt tegyem bele a prediktorba, mind a kimenőt, mind a bemenőt.
+Folytonos helyett szignumot eresszek rá, és bináris vektort kapjon
+
+- prediktor, ami ha haszontalant prediktál, az legyen tényleg haszontalan
+- binarizált vektorok, regresszió
+- súlyokra koncentrálni, súlyokat bevinni, +- arány, esetleg sorsolás
