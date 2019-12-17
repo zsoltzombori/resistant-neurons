@@ -7,18 +7,19 @@ import json
 import itertools
 import networks
 import data
+import gzip
 
 DATASET = "fashion_mnist"
 TRAINSIZE = 60000
 SEED = None
 BN_DO = None  # "BN" (batchnorm), "DO" (dropout), None
 BATCH_SIZE = 500
-DEPTH = 4
-WIDTH = 30
+DEPTH = 5
+WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.001
 MEMORY_SHARE = 0.25
-ITERS = 100
+ITERS = 200
 EVALUATION_CHECKPOINT = 20
 AUGMENTATION = False
 SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
@@ -26,7 +27,7 @@ BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
-EVALUATE_USEFULNESS = False
+EVALUATE_USEFULNESS = True
 USEFULNESS_EVAL_SET_SIZE = 10000
 
 os.system("rm -rf {}".format(LOG_DIR))
@@ -327,6 +328,7 @@ for iteration in range(ITERS+1):
                                 'reg_loss_in_layer': session.run(reg_losses)[d].tolist()}
 
                     cumulative_dictionary[iteration_no][current_neuron] = temp_cum
+                    cumulative_dictionary[iteration_no]['iteraton'] = iteration
 
             print(f"""Usefulness loop time: {usefulness_elapsed:.2f} seconds, with
                   {usefulness_elapsed/(DEPTH*WIDTH):.2f} seconds per
@@ -343,9 +345,9 @@ print("Total time: {}".format(time.time() - start_time))
 
 def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
 
-# makes one train iteration with logging;
-# useful for watching the effects of neuron changing
-# target can be 'train' or 'valid'
+    # makes one train iteration with logging;
+    # useful for watching the effects of neuron changing
+    # target can be 'train' or 'valid'
 
 
 
@@ -373,57 +375,7 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
             print("{:>5}:  dev acc {:.2f}".format(
                 TRAIN_ITER, eval_acc))
 
-
-
-
-d, w = 0, 3
-trainables = dict([(v.name, v) for v in tf.trainable_variables()])
-input_weights = session.run(trainables[f"dense_{d}/kernel:0"])[:, w]
-output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
-
-zero_mask = np.ones((DEPTH, WIDTH))
-
-for d in range(4):
-    for w in range(0, 30, 3):
-        zero_mask[d, w] = 0
-
-make_1_iteration(net_mask=zero_mask)
-
-
-for d in range(4):
-    for w in range(0, 30, 5):
-        make_1_iteration()
-        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
-        tensor_values = session.run(v1)
-        tensor_values[:, w] = np.zeros(tensor_values[:, w].shape)
-        session.run(tf.assign(v1, tensor_values))
-
-zeros = 0
-for d in range(4):
-    for w in range(0, 30):
-        v1 = session.graph.get_tensor_by_name(f"dense_{d}/kernel:0")
-        tensor_values = session.run(v1)
-        if all(tensor_values == np.zeros(tensor_values.shape)):
-            zeros += 1
-
-print(zeros)
-
-tensor = v1[:, 3]
-make_1_iteration()
-session.run(tensor).shape
-v1 = v1[:, 3].assign(tf.zeros(v1[:, 3].shape))
-session.run(tf.assign(v1[:, 3], tf.zeros(v1[:, 3].shape)))
-
-session.run(tf.assign(v1[2, 5], tf.Variable(initial_value=np.zeros(1), trainable=True)))
-
-make_1_iteration()
-for i in range(200):
-    make_1_iteration('train', logging = 20)
-
-
-make_1_iteration()
-
 if EVALUATE_USEFULNESS:
-    with open('neuron_logs/train_data/output_{}.json'.format(SESSION_NAME), 'w') as f:
+    with gzip.open('neuron_logs/train_data/output_{}.json.gz'.format(SESSION_NAME), 'wt', compresslevel=3) as f:
         json.dump(cumulative_dictionary, f)
 
