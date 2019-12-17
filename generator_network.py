@@ -18,7 +18,7 @@ DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.001
-MEMORY_SHARE = 0.25
+MEMORY_SHARE = 0.1
 ITERS = 200
 EVALUATION_CHECKPOINT = 20
 AUGMENTATION = False
@@ -134,8 +134,8 @@ optimizer = tf.train.AdamOptimizer(
 ).minimize(total_loss)
 
 config = tf.ConfigProto(device_count={'GPU': 2})
-# config = tf.ConfigProto()
-# config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
+
+config.gpu_options.per_process_gpu_memory_fraction = MEMORY_SHARE
 session = tf.Session(config=config)
 print("NETWORK PARAMETER COUNT",
       np.sum([np.prod(v.shape) for v in tf.trainable_variables()]))
