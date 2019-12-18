@@ -12,7 +12,7 @@ import gzip
 DATASET = "fashion_mnist"
 TRAINSIZE = 60000
 SEED = None
-BN_DO = None  # "BN" (batchnorm), "DO" (dropout), None
+BN_DO = 'DO'  # "BN" (batchnorm), "DO" (dropout), None
 BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100

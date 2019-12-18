@@ -117,3 +117,25 @@ Folytonos helyett szignumot eresszek rá, és bináris vektort kapjon
 - prediktor, ami ha haszontalant prediktál, az legyen tényleg haszontalan
 - binarizált vektorok, regresszió
 - súlyokra koncentrálni, súlyokat bevinni, +- arány, esetleg sorsolás
+
+# sokadik hét
+
+1. 1000 v 10000 usefulnessű
+2. periodicitás klaszterezés
+3. ezek esetleg egy csoportot alkotnak
+4. usefulness periodicitását prediktálgatni
+5. erről a periodicitásról holnap beszélni
+6. ez a hasznosság ciklus látszik-e az aktivációgörbéken
+7. hasznosság vs. fonat, konfidenciagörbe, nem 0
+8
+
+- kisebb hálónál van-e ciklikusság
+- idősoros predikció
+- több ilyen hálón is van-e ciklikusság
+- ha letakarom, eltűnik-e a ciklus
+- idősor-korreláció (DTW és tsai)
+- klaszterezzek periódus alapján
+- periodust elkódolni az adatban (hiszen szinuszos)
+- 
+- 
+- 
