@@ -137,5 +137,8 @@ Folytonos helyett szignumot eresszek rá, és bináris vektort kapjon
 - klaszterezzek periódus alapján
 - periodust elkódolni az adatban (hiszen szinuszos)
 - 
-- 
-- 
+
+# Bemutató
+- A dropouttal van baj, lehet attól ciklikus
+- Lucidban circuiteknek hívják őket
+- Lehet azzal kéne összevetni.
