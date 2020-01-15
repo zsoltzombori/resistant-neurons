@@ -13,16 +13,17 @@ DATASET = "fashion_mnist"
 TRAINSIZE = 60000
 SEED = None
 BN_DO = 'DO'  # "BN" (batchnorm), "DO" (dropout), None
+DROPOUT = 0.25  # KEEP PROBABILITY, means 1 is no dropout
 BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.001
-MEMORY_SHARE = 0.08
-ITERS = 200
-EVALUATION_CHECKPOINT = 20
+MEMORY_SHARE = 0.05
+ITERS = 100
+EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
-SESSION_NAME = "tmp_{}".format(time.strftime('%Y%m%d-%H%M%S'))
+SESSION_NAME = "sinusoidal_5_100_KP_{}_{}".format(DROPOUT, time.strftime('%Y%m%d-%H%M%S'))
 BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
@@ -52,7 +53,7 @@ inputs = tf.placeholder(tf.float32, shape=[BATCH_SIZE] + list(INPUT_SHAPE))
 mask = tf.placeholder(tf.float32, shape=[DEPTH, WIDTH])
 if CLASSIFIER_TYPE == "dense":
     output, activations, zs = networks.DenseNet(inputs, DEPTH, WIDTH, BN_DO,
-                                                OUTPUT_COUNT, dropout=0.5, mask=mask)
+                                                OUTPUT_COUNT, dropout=DROPOUT, mask=mask)
 elif CLASSIFIER_TYPE == "conv":
     output, activations, zs = networks.LeNet(
         inputs, BN_DO, OUTPUT_COUNT, dropout=0.8)
@@ -145,7 +146,8 @@ session.run(tf.local_variables_initializer())
 activations_dict = {}
 zs_dict = {}
 
-def evaluate(Xs, ys, BATCH_SIZE, net_mask = dummy_mask):
+
+def evaluate(Xs, ys, BATCH_SIZE, net_mask=dummy_mask):
     nonzeros = []
     for a in activations:
         assert len(a.shape) == 2
@@ -222,9 +224,6 @@ def find_weights(d, w):
     output_weights = session.run(trainables[f"dense_{d+1}/kernel:0"])[w, :]
     return(input_weights, output_weights)
 
-
-
-        
 
 cumulative_dictionary = {}
 
@@ -343,13 +342,12 @@ for iteration in range(ITERS+1):
 
 print("Total time: {}".format(time.time() - start_time))
 
-def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
+
+def make_1_iteration(target='valid', logging=1, net_mask=dummy_mask):
 
     # makes one train iteration with logging;
     # useful for watching the effects of neuron changing
     # target can be 'train' or 'valid'
-
-
 
     if target == 'train':
         train_data = next(train_gen)
@@ -360,7 +358,6 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
         )
         global TRAIN_ITER
         TRAIN_ITER += 1
-        
 
     # eval step
 
@@ -375,7 +372,7 @@ def make_1_iteration(target='valid', logging = 1, net_mask = dummy_mask):
             print("{:>5}:  dev acc {:.2f}".format(
                 TRAIN_ITER, eval_acc))
 
-if EVALUATE_USEFULNESS:
-    with gzip.open('neuron_logs/train_data/output_{}.json.gz'.format(SESSION_NAME), 'wt', compresslevel=3) as f:
-        json.dump(cumulative_dictionary, f)
 
+if EVALUATE_USEFULNESS:
+    with gzip.open('../bigstorage/output_{}.json.gz'.format(SESSION_NAME), 'wt', compresslevel=3) as f:
+        json.dump(cumulative_dictionary, f)

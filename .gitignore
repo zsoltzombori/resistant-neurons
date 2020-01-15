@@ -109,3 +109,4 @@ Neuron_predictor/sklearn_logreg/best_regressor_sklearn_after40.joblib
 visualization/test_0.mp4
 bokeh_tutorial
 presentation/.part
+logs
