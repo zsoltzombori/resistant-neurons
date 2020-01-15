@@ -142,3 +142,24 @@ Folytonos helyett szignumot eresszek rá, és bináris vektort kapjon
 - A dropouttal van baj, lehet attól ciklikus
 - Lucidban circuiteknek hívják őket
 - Lehet azzal kéne összevetni.
+
+# január 7
+- FFT, autokorr, 
+- dropout nélkül (meg esetleg skálásan)
+- kavarjam meg esetleg
+- az aktivációkban van-e valami hullámzás, vagy sem
+- Lucid Dani circuit
+- ők csak empirikusan megfigyelik és nincsen semmi eszközük, amivel azonosítani tudnák őket (szemre!)
+- 
+HIPO:
+- hasznos csoportok, amikből kilőve még elmegy a háló
+HIPO2:
+- a csoportok tagjainak szükségük van egymásra
+- ha kilövünk egy teljes csapatot, kicsi veszteség, ha random csoportokból, nagyobb vesztesés
+EGYÉB
+- a gf2-n (223) több a RAM 64 GB
+- a JSON kiírás soronként, valahogy 
+
+EFOP:
+- dokumentum 1 oldalban, hogy mit csináltam, milyen kísérleteket futtattam, képet is rakok bele
+- 
