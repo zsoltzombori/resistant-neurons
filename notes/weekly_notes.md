@@ -163,3 +163,29 @@ EGYÉB
 EFOP:
 - dokumentum 1 oldalban, hogy mit csináltam, milyen kísérleteket futtattam, képet is rakok bele
 - 
+
+# január 15
+1. beszámoló
+2. SVN-be
+
+- 4-5 oldalas a dokumentum, de akár 1-2 oldal
+- második félévben arXiv 
+- neuronok hasznosssága utánaolvasás
+- szélességnek köze van-e a periódushoz
+- keverjem össze a train epochok elején, ez lehet, hogy statisztikailag azzal egyezik meg, hogy visszatevéses mintavétellel
+- esetleg l2-vel
+- képenkénti neurononkénti hasznosság
+- ezeknek milyen az eloszlása
+- foxámoknak rétegenkénti (mert már vannak páros gráfjaink) eoja
+
+0. keverést nézzem meg
+1. dimenziókat nézzem meg (sokkal kisebb hálón ki lehet-e mulatni)
+2. periódusokat csoportosítani
+3. cikkeknek utánanézni
+
+nohup parancs & 
+
+ # január 22
+
+ - SVN-be töltsem fel a kért vállalást
+ - 
