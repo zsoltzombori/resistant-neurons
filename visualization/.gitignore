@@ -4,4 +4,3 @@ optimizer.pt
 usefulness_movie
 usefulness_after40
 usefulness_sorted
-time_series_vis/*

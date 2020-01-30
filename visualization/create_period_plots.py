@@ -21,7 +21,9 @@ from bokeh.plotting import figure, output_file, save
 from bokeh.models import CustomJS, ColumnDataSource
 from bokeh.models.tools import HoverTool
 
-files = [x.split('/')[-1] for x in glob.glob('/home/levaid/bigstorage/*.json.gz')]
+basepath = 'neuron_logs/shuffled/'
+save_path = 'visualization/time_series_vis/'
+files = [x.split('/')[-1] for x in glob.glob(basepath + '*.json.gz')]
 print(f'files are: \n{files}')
 
 activations_no = 1000
@@ -30,7 +32,7 @@ for i_prog, fname in enumerate(files):
 
     usefulness_per_neuron = collections.defaultdict(dict)
 
-    with gzip.open(os.path.join('/home', 'levaid', 'bigstorage', fname), 'rt') as f:
+    with gzip.open(basepath + fname, 'rt') as f:
         neuron_data = json.load(f)
 
     features_ = []
@@ -51,9 +53,11 @@ for i_prog, fname in enumerate(files):
             line_of_data = np.array(important_features, dtype=np.float32).reshape(1, -1)
             usefulness_per_neuron[e][neuron] = usefulness_gold
 
-    WIDTH = len(neuron_data['0'])
-    DEPTH = len(np.unique([int(x.split(' ')[0]) for x in neuron_data['0']]))
+    WIDTH = len([x for x in neuron_data['0'] if x[0] == '0'])
+    # print()
+    DEPTH = len(np.unique([int(x.split(' ')[0]) for x in neuron_data['0'] if ' ' in x]))
 
+    print(f'Dims are: W={WIDTH}, D={DEPTH}')
     for layer in range(DEPTH):
 
         better_filename = fname.split(".json")[0]
@@ -90,8 +94,8 @@ for i_prog, fname in enumerate(files):
         f1.xaxis[0].ticker.desired_num_ticks = range_of_epochs//5
 
         output_file(
-            f'../visualization/time_series_vis/{better_filename}_l{layer}.html', title=f'{better_filename}_l{layer}')
+            f'{basepath}{better_filename}_l{layer}.html', title=f'{better_filename}_l{layer}')
         save(f1)
 
-    print(f'done with file {i_prog} of {len(files)}')
+    print(f'done with file {i_prog+1} of {len(files)}')
 # show(f1)
