@@ -25,9 +25,10 @@ files = [x.split('/')[-1] for x in glob.glob('/home/levaid/bigstorage/*.json.gz'
 print(f'files are: \n{files}')
 
 activations_no = 1000
-usefulness_per_neuron = collections.defaultdict(dict)
 target = 'usefulness_loss'
 for i_prog, fname in enumerate(files):
+
+    usefulness_per_neuron = collections.defaultdict(dict)
 
     with gzip.open(os.path.join('/home', 'levaid', 'bigstorage', fname), 'rt') as f:
         neuron_data = json.load(f)
@@ -50,13 +51,16 @@ for i_prog, fname in enumerate(files):
             line_of_data = np.array(important_features, dtype=np.float32).reshape(1, -1)
             usefulness_per_neuron[e][neuron] = usefulness_gold
 
-    for layer in range(5):
+    WIDTH = len(neuron_data['0'])
+    DEPTH = len(np.unique([int(x.split(' ')[0]) for x in neuron_data['0']]))
+
+    for layer in range(DEPTH):
 
         better_filename = fname.split(".json")[0]
         plot_neuron_data = collections.defaultdict(list)
         range_of_epochs = len(usefulness_per_neuron)
 
-        for pos in range(100):
+        for pos in range(WIDTH):
             plot_neuron_data['range'] += [list(range(range_of_epochs))]
             gold = np.array([usefulness_per_neuron[e][f'{layer} {pos}']
                              for e in usefulness_per_neuron])[:range_of_epochs]
