@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/home/levai/miniconda3/envs/tensorflow/bin/python"
+    "python.pythonPath": "/home/levai/miniconda3/envs/tensorflow/bin/python",
+    "python.linting.enabled": true
 }
