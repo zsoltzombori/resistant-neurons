@@ -1,28 +1,21 @@
-import gzip, sklearn
+import gzip
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn import linear_model
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import mean_absolute_error
-
-from joblib import dump, load
-import os, json
+import json
 import collections
 import numpy.fft as fft
 import glob
 
+
 def find_period(data):
     a=np.abs(fft.rfft(data))
-    #Not sure if this is a good idea but seems to help with choppy data..
+    # Not sure if this is a good idea but seems to help with choppy data..
     a[0] = 0
     freqs = fft.rfftfreq(n=data.size, d=1)
     freqs = np.divide(1,freqs)
     max_freq = freqs[np.argmax(a)]
     return(max_freq)
+
 
 plt.style.use('ggplot')
 
@@ -38,7 +31,7 @@ target = 'usefulness_loss'
 for fname in files:
     with gzip.open(os.path.join(basepath, fname), 'rt') as f:
         neuron_data = json.load(f)
-        
+
     for e in neuron_data.keys():
         for neuron in neuron_data[e]:
             if ' ' not in neuron:
@@ -53,7 +46,7 @@ for fname in files:
             important_features += [current_data['reg_loss_in_layer']]
             important_features += current_data['activations'][:activations_no]
             usefulness_gold = current_data[target]
-            line_of_data = np.array(important_features, dtype = np.float32).reshape(1, -1)
+            line_of_data = np.array(important_features, dtype=np.float32).reshape(1, -1)
             usefulness_per_neuron[e][neuron] = usefulness_gold
 
     WIDTH = len([x for x in neuron_data['0'] if x[0] == '0'])
@@ -78,13 +71,13 @@ for fname in files:
     all_periods = np.array(all_periods, dtype = float).T
 
 
-    plt.figure(figsize = (12, 9))
+    plt.figure(figsize=(12, 9))
     plt.suptitle(f'Distribution of period times of usefulness in network\n{fname}')
     plt.subplot(211)
     bins = np.arange(0, 111, 10)
     plt.ylim(0, 100)
     plt.xlim(0, 110)
-    plt.hist(all_periods, bins, label = [f'layer {l}' for l in layers])
+    plt.hist(all_periods, bins, label=[f'layer {l}' for l in layers])
     plt.xticks(bins)
     plt.xlabel('period time')
     plt.ylabel('number of neurons')
@@ -99,7 +92,7 @@ for fname in files:
     plt.xlim(0, 20)
     plt.xlabel('period time')
     plt.ylabel('number of neurons')
-    plt.hist(all_periods, histtype='bar', bins = bins, label = [f'layer {l}' for l in layers])
+    plt.hist(all_periods, histtype='bar', bins=bins, label=[f'layer {l}' for l in layers])
 
 
     plt.legend()

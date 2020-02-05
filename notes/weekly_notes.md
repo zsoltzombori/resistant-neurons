@@ -188,4 +188,26 @@ nohup parancs &
  # január 22
 
  - SVN-be töltsem fel a kért vállalást
- - 
+
+
+# január 31.
+- az elejével nem tudunk mit kezdeni, ott egyszerűen túl sűrűen vannak.
+- meg kéne nézni, hogy mondjuk a 20 fölöttiekkel mi történik
+- layerwise pretraining
+  
+1. bayesian háló
+2. ha fontos, kicsi a szigma,
+3. ha nem, akkor nagy a szigma
+
+Nem kódolok, hanem csak olvasok, egyrészt implementáció és súlyfagyasztás, másrészt pedig bayesi háló
+
+#############################################x
+############                      ###########
+
+# február 5. 
+
+Boosting: megnézi, hogy mely adaton volt magas a loss, és azt nagyobb súllyal tanítja
+
+1. hozzak olyan implementációt, amit lehet fagyasztgatni neurononként
+2. ez egyféle boosting lenne
+3. random (nagy lossúakat) kiválasztok, azokat birizgálom
