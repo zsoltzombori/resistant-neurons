@@ -215,3 +215,6 @@ Boosting: megnézi, hogy mely adaton volt magas a loss, és azt nagyobb súllyal
 Valami
 
 5. ez egy sor
+
+# február 12.
+Pytorchban implementálok.
