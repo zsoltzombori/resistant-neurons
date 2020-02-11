@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import time
 import os
-import sys
 import json
 import itertools
 import networks

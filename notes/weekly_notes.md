@@ -205,9 +205,13 @@ Nem kódolok, hanem csak olvasok, egyrészt implementáció és súlyfagyasztás
 ############                      ###########
 
 # február 5. 
-
+corpora/dep/sentences_ending_with_s_deprel.txt
 Boosting: megnézi, hogy mely adaton volt magas a loss, és azt nagyobb súllyal tanítja
 
 1. hozzak olyan implementációt, amit lehet fagyasztgatni neurononként
 2. ez egyféle boosting lenne
 3. random (nagy lossúakat) kiválasztok, azokat birizgálom
+
+Valami
+
+5. ez egy sor
