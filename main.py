@@ -19,7 +19,8 @@ BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
-LR = 0.01
+LR = 0.001
+L1REG = 0.02
 MEMORY_SHARE = 0.05
 ITERS = 30
 EVALUATION_CHECKPOINT = 1
@@ -69,7 +70,7 @@ def calculate_l1loss(net):
     for name, param in net.named_parameters():
         l1loss += torch.norm(param, p=1)
 
-    return(l1loss)
+    return(l1loss * L1REG)
 
 
 net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
@@ -95,19 +96,21 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         outputs = net(images)
         hidden_activations += [net.hidden_activations]
         l1loss = calculate_l1loss(net)
-        loss = criterion(outputs, labels) + l1loss * 0.002 * LR
-        running_l1loss += l1loss.item() * 0.002 * LR
+        loss = criterion(outputs, labels) + l1loss
+        # print(loss)
+        # print(l1loss * LR)
+        running_l1loss += l1loss
         # BUG I don't know why, but it does not work, acc is 0.1
         loss.backward()
         optimizer.step()
         # print statistics
-        running_loss += loss.item()
+        running_loss += loss
         running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels)
 
     print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss / minibatches:.3f}\t\
     Train accuracy: {running_predictions.numpy()/len(train_dataset):.3f}\
     Test accuracy: {test_epoch(net):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
-    L1Loss: {running_l1loss:.2f}')
+    L1Loss: {running_l1loss / minibatches:.2f}')
     net = net.train()
     running_loss = 0.0
     running_predictions = 0
