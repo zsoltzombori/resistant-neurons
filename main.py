@@ -14,13 +14,13 @@ import time
 DATASET = "fashion_mnist"
 TRAINSIZE = 60000
 SEED = None
-DROPOUT = 0.5
+DROPOUT = 0.25
 BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.001
-L1REG = 0.02
+L1REG = 1e-5
 MEMORY_SHARE = 0.05
 ITERS = 30
 EVALUATION_CHECKPOINT = 1
@@ -32,6 +32,8 @@ CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
 EVALUATE_USEFULNESS = True
 USEFULNESS_EVAL_SET_SIZE = 1000
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 starttime = time.time()
 
@@ -66,14 +68,17 @@ def test_epoch(net):
 
 def calculate_l1loss(net):
     # l1loss = torch.autograd.Variable(torch.tensor(0, dtype=torch.float, requires_grad=True))
-    l1loss = torch.tensor(0.)
-    for name, param in net.named_parameters():
-        l1loss += torch.norm(param, p=1)
+    l1loss = 0.
+    for param in net.parameters():
+        if param.requires_grad:
+            l1loss += param.abs().sum()
 
     return(l1loss * L1REG)
 
 
 net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
+net.to(device)
+
 print(net)
 
 criterion = nn.CrossEntropyLoss()
@@ -89,28 +94,26 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     epochtime = time.time()
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
-        images, labels = data
+        images, labels = data[0].to(device), data[1].to(device)
         # zero the parameter gradients
         optimizer.zero_grad()
         # forward + backward + optimize
         outputs = net(images)
         hidden_activations += [net.hidden_activations]
+        # l1loss = calculate_l1loss(net)
         l1loss = calculate_l1loss(net)
         loss = criterion(outputs, labels) + l1loss
-        # print(loss)
-        # print(l1loss * LR)
+
         running_l1loss += l1loss
-        # BUG I don't know why, but it does not work, acc is 0.1
         loss.backward()
         optimizer.step()
         # print statistics
         running_loss += loss
         running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels)
-
     print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss / minibatches:.3f}\t\
     Train accuracy: {running_predictions.numpy()/len(train_dataset):.3f}\
     Test accuracy: {test_epoch(net):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
-    L1Loss: {running_l1loss / minibatches:.2f}')
+    L1Loss: {running_l1loss / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters() if p.requires_grad]):.3f}')
     net = net.train()
     running_loss = 0.0
     running_predictions = 0
