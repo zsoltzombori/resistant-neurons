@@ -19,8 +19,8 @@ BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
-LR = 0.001
-L1REG = 1e-5
+LR = 0.002
+L1REG = 5e-5
 MEMORY_SHARE = 0.05
 ITERS = 30
 EVALUATION_CHECKPOINT = 1
@@ -56,13 +56,17 @@ eval_loader = DataLoader(dataset=eval_dataset,
                          shuffle=False)
 
 
-def test_epoch(net):
-    net = net.eval()
-    correct = 0
-    total = 0
+def test_epoch(net, device):
+    net.eval()
+    correct = 0.
+    total = len(test_dataset)
+
     for images, labels in test_loader:
-        correct += torch.sum(torch.argmax(net(images), dim=1) == labels).numpy()
-        total += labels.size(0)                  # Increment the total count
+        images = images.to(device)
+        labels = labels.to(device)
+        # torch.argmax(net(images), dim=1) == labels
+        correct += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu()
+
     return(correct/total)
 
 
@@ -82,12 +86,12 @@ net.to(device)
 print(net)
 
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=LR)
+optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0)
 
 minibatches = len(train_dataset) // BATCH_SIZE
 
 for epoch in range(ITERS):  # loop over the dataset multiple times
-    running_predictions = 0
+    running_predictions = 0.
     running_loss = 0.0
     running_l1loss = 0.0
     hidden_activations = []
@@ -109,11 +113,11 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         optimizer.step()
         # print statistics
         running_loss += loss
-        running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels)
-    print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss / minibatches:.3f}\t\
-    Train accuracy: {running_predictions.numpy()/len(train_dataset):.3f}\
-    Test accuracy: {test_epoch(net):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
-    L1Loss: {running_l1loss / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters() if p.requires_grad]):.3f}')
+        running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu()
+    print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss.cpu() / minibatches:.3f}\
+    Train accuracy: {running_predictions/len(train_dataset):.3f}\
+    Test accuracy: {test_epoch(net, device):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
+    L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
     net = net.train()
     running_loss = 0.0
     running_predictions = 0

@@ -22,12 +22,12 @@ class FFNet(nn.Module):
         self.hidden_activations = []
         x = torch.flatten(x, 1)
         x = self.fcin(x)
-        self.hidden_activations += [x.detach().numpy()]
+        self.hidden_activations += [x.cpu().detach().numpy()]
         x = self.do1(x)
         x = self.relu1(x)
         for l in self.fc_layers:
             if isinstance(l, nn.Linear):
-                self.hidden_activations += [x.detach().numpy()]
+                self.hidden_activations += [x.cpu().detach().numpy()]
             x = l(x)
         x = self.fclass(x)
         out = F.softmax(x, dim=1)
