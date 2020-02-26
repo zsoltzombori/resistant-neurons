@@ -20,7 +20,7 @@ DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.002
-L1REG = 5e-5
+L1REG = 0.01
 MEMORY_SHARE = 0.05
 ITERS = 30
 EVALUATION_CHECKPOINT = 1
@@ -73,9 +73,9 @@ def test_epoch(net, device):
 def calculate_l1loss(net):
     # l1loss = torch.autograd.Variable(torch.tensor(0, dtype=torch.float, requires_grad=True))
     l1loss = 0.
-    for param in net.parameters():
-        if param.requires_grad:
-            l1loss += param.abs().sum()
+    for name, param in net.named_parameters():
+        if param.requires_grad and 'weight' in name:
+            l1loss += torch.mean(torch.abs(param))
 
     return(l1loss * L1REG)
 
