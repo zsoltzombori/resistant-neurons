@@ -12,7 +12,7 @@ class FFNet(nn.Module):
         self.do1 = nn.Dropout(p=dropout)
         self.relu1 = nn.ReLU()
         self.fc_layers = []
-        for d in range(depth-1):
+        for d in range(depth-2):
             self.fc_layers += [nn.Linear(width, width), nn.Dropout(p=dropout), nn.ReLU()]
         self.fc_layers = nn.ModuleList(self.fc_layers)
         self.fclass = nn.Linear(width, output_count)
@@ -30,5 +30,6 @@ class FFNet(nn.Module):
             x = l(x)
 
         x = self.fclass(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
         out = F.softmax(x, dim=1)
         return(out)

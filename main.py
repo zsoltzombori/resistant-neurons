@@ -8,6 +8,7 @@ import torch.optim
 from torch.utils.data import DataLoader
 import numpy as np
 import torchnet
+import matplotlib.pyplot as plt
 
 import time
 
@@ -65,7 +66,7 @@ def test_epoch(net, device):
         images = images.to(device)
         labels = labels.to(device)
         # torch.argmax(net(images), dim=1) == labels
-        correct += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu()
+        correct += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu().numpy()
 
     return(correct/total)
 
@@ -80,6 +81,40 @@ def calculate_l1loss(net):
     return(l1loss * L1REG)
 
 
+def get_weights_for_position(pos, net, direction='input'):
+
+    d, p = pos
+    weight_layers = []
+    for name, weights in net.named_parameters():
+        if 'weight' in name:
+            weight_layers += [weights.cpu().detach().numpy()]
+
+    return(weight_layers[d][p, :])
+
+
+def get_grad_for_position(pos, net, direction='input'):
+
+    d, p = pos
+    grads = []
+    for name, weights in net.named_parameters():
+        if 'weight' in name:
+            grads += [weights.cpu().detach().numpy()]
+
+    return(grads[d][p, :])
+
+
+def zero_grad_for_neuron(pos, net, direction='input'):
+    d, p = pos
+    i = 0
+    for name, weights in net.named_parameters():
+        if 'weight' in name:
+            if i == d:
+                # print(weights.grad[p, :].size())
+                weights.grad[p, :] = 0
+                return()
+            i += 1
+
+
 net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
 net.to(device)
 
@@ -90,15 +125,21 @@ optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0)
 
 minibatches = len(train_dataset) // BATCH_SIZE
 
+neurons_to_freeze = []
+
 for epoch in range(ITERS):  # loop over the dataset multiple times
     running_predictions = 0.
     running_loss = 0.0
     running_l1loss = 0.0
     hidden_activations = []
     epochtime = time.time()
+    net = net.train()
+    
+    neurons_to_zero = [(0, x) for x in range(100)]
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
         images, labels = data[0].to(device), data[1].to(device)
+
         # zero the parameter gradients
         optimizer.zero_grad()
         # forward + backward + optimize
@@ -110,20 +151,26 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
 
         running_l1loss += l1loss
         loss.backward()
+        # we have the gradients at this point, and they are encoded in param.grad where param is net.parameters()
+        if epoch >= 5:
+            for pos in neurons_to_freeze:
+                zero_grad_for_neuron(pos, net)
+
         optimizer.step()
         # print statistics
         running_loss += loss
-        running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu()
+        running_predictions += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu().numpy()
+        
+    #  = (0, 5)
+    # print(np.sum(np.abs(get_weights_for_position(pos, net))))
+
     print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss.cpu() / minibatches:.3f}\
     Train accuracy: {running_predictions/len(train_dataset):.3f}\
     Test accuracy: {test_epoch(net, device):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
-    net = net.train()
-    running_loss = 0.0
-    running_predictions = 0
-    running_l1loss = 0.0
+
+    hidden_activations_for_layer = np.concatenate([x[1] for x in hidden_activations], axis=0)
 
 
-hidden_activations_new = np.concatenate(hidden_activations, axis=1)
 endtime = time.time()
 print(f'Training took {endtime-starttime:.2f} seconds')

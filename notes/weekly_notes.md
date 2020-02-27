@@ -218,3 +218,22 @@ Valami
 
 # február 12.
 Pytorchban implementálok.
+
+# február 20.
+A nagy aktivációjúakat lefagyasztom, miután tanult.
+Utána kidobom azokat az adatokat, amiket eltalált.
+És folytatom a tanulást a fagyasztott hálóval.
+
+Kérdések:
+- mennyit romlik a teljesítmény azokon, amiket már nem tanítunk
+- mennyit javult azon, amit tanítunk
+- milyen hatással van az általánosításra (azaz a teszthalmazra)
+- hány iteráción át lehet csinálni
+
+# február 28.
+
+Q: Pytorch architektúra, nem feltétlen neuronok, pontos nullázás
+Romlik a minden is, a háló felejt.
+Gördülő átlag kéne?
+
+
