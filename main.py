@@ -22,6 +22,7 @@ WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.002
 L1REG = 0.01
+L2REG = 0.01
 MEMORY_SHARE = 0.05
 ITERS = 30
 EVALUATION_CHECKPOINT = 1
@@ -79,6 +80,14 @@ def calculate_l1loss(net):
             l1loss += torch.mean(torch.abs(param))
 
     return(l1loss * L1REG)
+
+def calculate_l2loss(net):
+    l2loss = 0.
+    for name, param in net.named_parameters():
+        if param.requires_grad and 'weight' in name:
+            l2loss += torch.mean(param ** 2)
+
+    return(l2loss * L2REG)
 
 
 def get_weights_for_position(pos, net, direction='input'):
@@ -191,7 +200,8 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         hidden_activations_for_epoch += [net.hidden_activations]
         # l1loss = calculate_l1loss(net)
         l1loss = calculate_l1loss(net)
-        loss = criterion(outputs, labels) + l1loss
+        l2loss = calculate_l2loss(net)
+        loss = criterion(outputs, labels) + l1loss + l2loss
 
         running_l1loss += l1loss
         loss.backward()
@@ -226,7 +236,7 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         neurons_to_freeze = get_and_add_topn_activations(
             net, 0, neurons_to_freeze, int(28*28*ratio_to_freeze), hidden_activations_for_epoch)
         neurons_to_freeze = get_and_add_topn_activations(
-            net, DEPTH-1, neurons_to_freeze, int(OUTPUT_COUNT*ratio_to_freeze), hidden_activations_for_epoch)
+            net, DEPTH-1, neurons_to_freeze, int(OUTPUT_COUNT), hidden_activations_for_epoch)
         for l in range(1, DEPTH-1):
             topn = int(WIDTH * ratio_to_freeze)
             neurons_to_freeze = get_and_add_topn_activations(
