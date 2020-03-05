@@ -5,10 +5,11 @@ from torchvision.datasets import FashionMNIST
 # import torchvision
 import torchvision.transforms as transforms
 import torch.optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import numpy as np
 import torchnet
 import matplotlib.pyplot as plt
+import helper_functions as H
 
 import time
 
@@ -45,122 +46,22 @@ test_dataset = FashionMNIST('.', train=False, download=True,
                             transform=transforms.Compose([transforms.ToTensor()]))
 eval_dataset = torch.utils.data.Subset(test_dataset, range(USEFULNESS_EVAL_SET_SIZE))
 
-train_loader = DataLoader(dataset=train_dataset,
-                          batch_size=BATCH_SIZE,
-                          shuffle=True)
-
-test_loader = DataLoader(dataset=test_dataset,
-                         batch_size=BATCH_SIZE,
-                         shuffle=False)
-
-eval_loader = DataLoader(dataset=eval_dataset,
-                         batch_size=BATCH_SIZE,
-                         shuffle=False)
+train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+eval_loader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 
-def test_epoch(net, device):
-    net.eval()
-    correct = 0.
-    total = len(test_dataset)
-
-    for images, labels in test_loader:
-        images = images.to(device)
-        labels = labels.to(device)
-        # torch.argmax(net(images), dim=1) == labels
-        correct += torch.sum(torch.argmax(net(images), dim=1) == labels).cpu().numpy()
-
-    return(correct/total)
-
-
-def calculate_l1loss(net):
-    # l1loss = torch.autograd.Variable(torch.tensor(0, dtype=torch.float, requires_grad=True))
-    l1loss = 0.
-    for name, param in net.named_parameters():
-        if param.requires_grad and 'weight' in name:
-            l1loss += torch.mean(torch.abs(param))
-
-    return(l1loss * L1REG)
-
-def calculate_l2loss(net):
-    l2loss = 0.
-    for name, param in net.named_parameters():
-        if param.requires_grad and 'weight' in name:
-            l2loss += torch.mean(param ** 2)
-
-    return(l2loss * L2REG)
-
-
-def get_weights_for_position(pos, net, direction='input'):
-
-    d, p = pos
-    weight_layers = []
-    for name, weights in net.named_parameters():
-        if 'weight' in name:
-            weight_layers += [weights.cpu().detach().numpy()]
-
-    return(weight_layers[d][p, :])
-
-
-def get_grad_for_position(pos, net, direction='input'):
-
-    d, p = pos
-    grads = []
-    for name, weights in net.named_parameters():
-        if 'weight' in name:
-            grads += [weights.cpu().detach().numpy()]
-
-    return(grads[d][p, :])
-
-
-def zero_grad_for_neuron(pos, net, direction='input'):
-    d, p = pos
-    i = 0
-    for name, weights in net.named_parameters():
-        if 'weight' in name:
-            if i == d:
-                # print(weights.grad[p, :].size())
-                weights.grad[p, :] = 0
-                return()
-            i += 1
-
-
-class VanishingDataset(Dataset):
-    def __init__(self, list_of_image_target_tuples):
-        self.data = torch.stack([x[0] for x in list_of_image_target_tuples])
-        self.targets = torch.stack([x[1] for x in list_of_image_target_tuples])
-
-    def __len__(self):
-        return len(self.targets)
-
-    def __getitem__(self, idx):
-        return(self.data[idx], self.targets[idx])
-
-
-def get_and_add_topn_activations(net, layer, frozen_neurons, topn, hidden_activations):
-
-    hidden_activations_for_layer = np.concatenate([x[layer] for x in hidden_activations], axis=0)
-    sum_activations_per_neuron = np.sum(np.abs(hidden_activations_for_layer), axis=0)
-    sorted_by_activation = np.argsort(sum_activations_per_neuron)[::-1]
-    old_frozen_neurons = [x[1] for x in frozen_neurons if x[0] == layer]
-    new_frozen_neurons = []
-    for n_i in sorted_by_activation:
-        if len(new_frozen_neurons) < topn:
-            # print(n_i)
-            if n_i in old_frozen_neurons:
-                pass
-            else:
-                new_frozen_neurons += [n_i]
-        else:
-            break
-
-    frozen_neurons += [(layer, n_i) for n_i in new_frozen_neurons]
-    return(frozen_neurons)
-
-
-net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
+# net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
+net = torchnet.LeNet()
 net.to(device)
 
 print(net)
+
+print(f'layer dimensions: '
+      f'{[(list(layer.size())) for layer in net.parameters() if layer.requires_grad]}')
+
+print(f'number of trainable parameters: '
+      f'{sum([np.prod(list(layer.size())) for layer in net.parameters() if layer.requires_grad])}')
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=LR, weight_decay=0)
@@ -199,8 +100,8 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
 
         hidden_activations_for_epoch += [net.hidden_activations]
         # l1loss = calculate_l1loss(net)
-        l1loss = calculate_l1loss(net)
-        l2loss = calculate_l2loss(net)
+        l1loss = H.calculate_l1loss(net, L1REG)
+        l2loss = H.calculate_l2loss(net, L2REG)
         loss = criterion(outputs, labels) + l1loss + l2loss
 
         running_l1loss += l1loss
@@ -208,7 +109,7 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         # we have the gradients at this point, and they are encoded in param.grad where param is net.parameters()
         if epoch >= 0:
             for pos in neurons_to_freeze:
-                zero_grad_for_neuron(pos, net)
+                H.zero_grad_for_neuron(pos, net)
 
         optimizer.step()
         # print statistics
@@ -222,31 +123,30 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
 
     print(f'{epoch + 1:03d}/{ITERS:03d} Train loss: {running_loss.cpu() / minibatches:.3f}\
     Train accuracy: {running_predictions/samples_seen:.3f}\
-    Test accuracy: {test_epoch(net, device):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
+    Test accuracy: {H.test_epoch(net, device, test_loader):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
 
-    layer = 1
+    ratio_to_freeze = 1
 
-    ratio_to_freeze = 0.949
+    if epoch == 35:
+        # vanishing_dataset = H.VanishingDataset(list_of_data)
+        # vanish_dataloader = DataLoader(dataset=vanishing_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    if epoch == 15:
-        vanishing_dataset = VanishingDataset(list_of_data)
-        vanish_dataloader = DataLoader(dataset=vanishing_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-        neurons_to_freeze = get_and_add_topn_activations(
+        neurons_to_freeze = H.get_and_add_topn_activations(
             net, 0, neurons_to_freeze, int(28*28*ratio_to_freeze), hidden_activations_for_epoch)
-        neurons_to_freeze = get_and_add_topn_activations(
+        neurons_to_freeze = H.get_and_add_topn_activations(
             net, DEPTH-1, neurons_to_freeze, int(OUTPUT_COUNT), hidden_activations_for_epoch)
         for l in range(1, DEPTH-1):
             topn = int(WIDTH * ratio_to_freeze)
-            neurons_to_freeze = get_and_add_topn_activations(
+            neurons_to_freeze = H.get_and_add_topn_activations(
                 net, l, neurons_to_freeze, topn, hidden_activations_for_epoch)
 
         neurons_to_freeze = sorted(neurons_to_freeze, key=lambda x: x[0])
-        print(f'length of the remaining images: {len(vanishing_dataset)}')
+        # print(f'length of the remaining images: {len(vanishing_dataset)}')
         print(neurons_to_freeze)
 
     if False:
+        layer = 1
         hidden_activations_for_layer = np.concatenate([x[layer] for x in hidden_activations_for_epoch], axis=0)
         plt.plot(figsize=(12, 6), facecolor='w')
         plt.hist(np.sum(np.abs(hidden_activations_for_layer), axis=0))

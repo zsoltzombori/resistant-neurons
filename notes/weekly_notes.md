@@ -236,4 +236,9 @@ Q: Pytorch architektúra, nem feltétlen neuronok, pontos nullázás
 Romlik a minden is, a háló felejt.
 Gördülő átlag kéne?
 
+- A cikkben szereplő fagyasztási módszert próbáljam ki.
+- A küszöböt alacsonyabbra lehet tenni
+- Kipróbálni az L2-t
+- Dense-et lecserélni konvra (LeNet)
+- Először fussak neki dropout/batchnorm nélkül, de azért csináljam meg
 

@@ -33,3 +33,36 @@ class FFNet(nn.Module):
         self.hidden_activations += [x.cpu().detach().numpy()]
         out = F.softmax(x, dim=1)
         return(out)
+
+
+class LeNet(nn.Module):
+    def __init__(self):
+        super(LeNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(256, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        self.hidden_activations = []
+        x = self.conv1(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = self.conv2(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
+        x = F.relu(x)
+        x = self.fc2(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
+        x = F.relu(x)
+        x = self.fc3(x)
+        self.hidden_activations += [x.cpu().detach().numpy()]
+        # I'd have a softmax, please and thank you
+        out = F.softmax(x, dim=1)
+        return out
