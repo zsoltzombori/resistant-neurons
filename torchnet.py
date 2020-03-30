@@ -50,6 +50,7 @@ class LeNet(nn.Module):
         self.hidden_activations += [x.cpu().detach().numpy()]
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
+        
         x = self.conv2(x)
         self.hidden_activations += [x.cpu().detach().numpy()]
         x = F.relu(x)

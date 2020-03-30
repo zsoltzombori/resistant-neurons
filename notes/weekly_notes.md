@@ -242,3 +242,26 @@ Gördülő átlag kéne?
 - Dense-et lecserélni konvra (LeNet)
 - Először fussak neki dropout/batchnorm nélkül, de azért csináljam meg
 
+# március 6.
+
+- CIFAR-10, CIFAR-100 
+- w_2 weight decay
+- batch norm
+- Adrián ResNet implementáció
+- megnövelném a filter számot (kimeneti csatornák számát)
+- mert ezeket fogom befagyasztani
+- esetleg fagyasztás és továbbtanítás után felolvasztás
+- Jelasity Márk, Szeged
+- softmax + crossentropy, csak néha máshogy számolják, mert numerikusan stabilabb
+
+1. CIFAR-10, ResNet, lassabb világba lépek be
+2. a kísérlet hosszabb lesz, ne aggódjak
+3. Adriánnak arról is lesz véleménye, hogy mennyivel érdemes kísérletezni
+4. Nézzem meg az aktivációkat
+5. Csökkentsem az adathalmazt
+6. 
+
+# március 30. (most állok neki újra)
+
+- ResNet18
+- 

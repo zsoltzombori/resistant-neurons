@@ -1,7 +1,7 @@
-import torch
+.utilsimport torch
 import torch.nn as nn
 # import torch.nn.functional as F
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import FashionMNIST
 # import torchvision
 import torchvision.transforms as transforms
 import torch.optim
@@ -10,7 +10,6 @@ import numpy as np
 import torchnet
 import matplotlib.pyplot as plt
 import helper_functions as H
-import resnet
 
 import time
 
@@ -41,35 +40,19 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 starttime = time.time()
 
-# TODO put this to some other file
-# train_dataset = FashionMNIST('.', train=True, download=True,
-#                              transform=transforms.Compose([transforms.ToTensor()]))
-# test_dataset = FashionMNIST('.', train=False, download=True,
-#                             transform=transforms.Compose([transforms.ToTensor()]))
-# eval_dataset = torch.utils.data.Subset(test_dataset, range(USEFULNESS_EVAL_SET_SIZE))
-
-# train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-# test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-# eval_loader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
-
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-train_dataset = CIFAR10(root='./.datasets', train=True, download=True, transform=transform)
-test_dataset = CIFAR10(root='./.datasets', train=False, download=True, transform=transform)
+train_dataset = FashionMNIST('.', train=True, download=True,
+                             transform=transforms.Compose([transforms.ToTensor()]))
+test_dataset = FashionMNIST('.', train=False, download=True,
+                            transform=transforms.Compose([transforms.ToTensor()]))
 eval_dataset = torch.utils.data.Subset(test_dataset, range(USEFULNESS_EVAL_SET_SIZE))
 
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-                                        
+train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 eval_loader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
-
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 
 # net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
-net = resnet.resnet18(pretrained=False, progress=True)
+net = torchnet.LeNet()
 net.to(device)
 
 print(net)
@@ -87,7 +70,6 @@ minibatches = len(train_dataset) // BATCH_SIZE
 
 neurons_to_freeze = []
 vanish_dataloader = train_loader
-
 
 for epoch in range(ITERS):  # loop over the dataset multiple times
     running_predictions = 0.
@@ -116,7 +98,7 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
             if tag != pred:
                 list_of_data += [tuple([im, tag])]
 
-        # hidden_activations_for_epoch += [net.hidden_activations]
+        hidden_activations_for_epoch += [net.hidden_activations]
         # l1loss = calculate_l1loss(net)
         l1loss = H.calculate_l1loss(net, L1REG)
         l2loss = H.calculate_l2loss(net, L2REG)
@@ -125,9 +107,9 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         running_l1loss += l1loss
         loss.backward()
         # we have the gradients at this point, and they are encoded in param.grad where param is net.parameters()
-        # if epoch >= 0:
-        #     for pos in neurons_to_freeze:
-        #         H.zero_grad_for_neuron(pos, net)
+        if epoch >= 0:
+            for pos in neurons_to_freeze:
+                H.zero_grad_for_neuron(pos, net)
 
         optimizer.step()
         # print statistics
@@ -143,7 +125,8 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     Train accuracy: {running_predictions/samples_seen:.3f}\
     Test accuracy: {H.test_epoch(net, device, test_loader):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
-
+    
+    break
     ratio_to_freeze = 1
     if epoch == 3:
         break

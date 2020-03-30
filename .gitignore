@@ -111,3 +111,5 @@ bokeh_tutorial
 presentation/.part
 logs
 FashionMNIST
+datasets
+.datasets
