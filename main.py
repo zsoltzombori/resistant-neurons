@@ -15,18 +15,18 @@ import resnet
 import time
 
 DATASET = "fashion_mnist"
-TRAINSIZE = 60000
+TRAINSIZE = 50000
 SEED = None
 DROPOUT = 0.25
 BATCH_SIZE = 500
 DEPTH = 5
 WIDTH = 100
 OUTPUT_COUNT = 10
-LR = 0.002
+LR = 0.01
 L1REG = 0.01
 L2REG = 0.01
 MEMORY_SHARE = 0.05
-ITERS = 30
+ITERS = 300
 EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
 SESSION_NAME = "sinusoidal_5_100_KP_{}_{}".format(DROPOUT, time.strftime('%Y%m%d-%H%M%S'))
@@ -52,16 +52,29 @@ starttime = time.time()
 # test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 # eval_loader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+# transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-train_dataset = CIFAR10(root='./.datasets', train=True, download=True, transform=transform)
-test_dataset = CIFAR10(root='./.datasets', train=False, download=True, transform=transform)
+transform_train = transforms.Compose([
+    # transforms.RandomCrop(32, padding=4),
+    # transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+])
+
+transform_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+])
+
+
+train_dataset = CIFAR10(root='./.datasets', train=True, download=True, transform=transform_train)
+test_dataset = CIFAR10(root='./.datasets', train=False, download=True, transform=transform_test)
 eval_dataset = torch.utils.data.Subset(test_dataset, range(USEFULNESS_EVAL_SET_SIZE))
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
 
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-                                        
+
 eval_loader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 classes = ('plane', 'car', 'bird', 'cat',
@@ -99,6 +112,13 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     samples_seen = 0
 
     list_of_data = []
+    for param_group in optimizer.param_groups:
+        if epoch < 100:
+            param_group['lr'] = LR
+        elif epoch >= 100 and epoch <= 200:
+            param_group['lr'] = LR/10
+        elif epoch >= 200:
+            param_group['lr'] = LR/100
 
     for i, data in enumerate(vanish_dataloader, 0):
 
@@ -143,36 +163,6 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     Train accuracy: {running_predictions/samples_seen:.3f}\
     Test accuracy: {H.test_epoch(net, device, test_loader):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
-
-    ratio_to_freeze = 1
-    if epoch == 3:
-        break
-    if epoch == 35:
-        # vanishing_dataset = H.VanishingDataset(list_of_data)
-        # vanish_dataloader = DataLoader(dataset=vanishing_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-        neurons_to_freeze = H.get_and_add_topn_activations(
-            net, 0, neurons_to_freeze, int(28*28*ratio_to_freeze), hidden_activations_for_epoch)
-        neurons_to_freeze = H.get_and_add_topn_activations(
-            net, DEPTH-1, neurons_to_freeze, int(OUTPUT_COUNT), hidden_activations_for_epoch)
-        for l in range(1, DEPTH-1):
-            topn = int(WIDTH * ratio_to_freeze)
-            neurons_to_freeze = H.get_and_add_topn_activations(
-                net, l, neurons_to_freeze, topn, hidden_activations_for_epoch)
-
-        neurons_to_freeze = sorted(neurons_to_freeze, key=lambda x: x[0])
-        # print(f'length of the remaining images: {len(vanishing_dataset)}')
-        print(neurons_to_freeze)
-
-    if False:
-        layer = 1
-        hidden_activations_for_layer = np.concatenate([x[layer] for x in hidden_activations_for_epoch], axis=0)
-        plt.plot(figsize=(12, 6), facecolor='w')
-        plt.hist(np.sum(np.abs(hidden_activations_for_layer), axis=0))
-        plt.title(f'sum of activations in epoch {epoch}')
-        plt.grid()
-        plt.show()
-
 
 endtime = time.time()
 print(f'Training took {endtime-starttime:.2f} seconds')
