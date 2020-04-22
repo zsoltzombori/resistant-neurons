@@ -264,4 +264,8 @@ Gördülő átlag kéne?
 # március 30. (most állok neki újra)
 
 - ResNet18
-- 
+
+
+# április 22.
+
+

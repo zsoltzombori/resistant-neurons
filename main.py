@@ -11,6 +11,7 @@ import torchnet
 import matplotlib.pyplot as plt
 import helper_functions as H
 import resnet
+import pickle
 
 import time
 
@@ -29,7 +30,7 @@ MEMORY_SHARE = 0.05
 ITERS = 300
 EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
-SESSION_NAME = "sinusoidal_5_100_KP_{}_{}".format(DROPOUT, time.strftime('%Y%m%d-%H%M%S'))
+SESSION_NAME = f'{time.strftime("%Y%m%d-%H%M%S")}'
 BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
@@ -100,7 +101,7 @@ minibatches = len(train_dataset) // BATCH_SIZE
 
 neurons_to_freeze = []
 vanish_dataloader = train_loader
-
+weights = []
 
 for epoch in range(ITERS):  # loop over the dataset multiple times
     running_predictions = 0.
@@ -119,6 +120,10 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
             param_group['lr'] = LR/10
         elif epoch >= 200:
             param_group['lr'] = LR/100
+
+    current_weights = [layer.cpu().detach().numpy() for layer in net.parameters() if layer.requires_grad]
+    weights += [current_weights]
+    np.save(f'neuron_logs/{SESSION_NAME}_epoch_{epoch}.npy', weights)
 
     for i, data in enumerate(vanish_dataloader, 0):
 
@@ -163,6 +168,8 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     Train accuracy: {running_predictions/samples_seen:.3f}\
     Test accuracy: {H.test_epoch(net, device, test_loader):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
+
+    
 
 endtime = time.time()
 print(f'Training took {endtime-starttime:.2f} seconds')
