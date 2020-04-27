@@ -11,7 +11,9 @@ import torchnet
 import matplotlib.pyplot as plt
 import helper_functions as H
 import resnet
-import pickle
+
+from collections import defaultdict
+import os
 
 import time
 
@@ -103,6 +105,44 @@ neurons_to_freeze = []
 vanish_dataloader = train_loader
 weights = []
 
+# here comes the hooks
+
+os.mkdir(f'neuron_logs/{SESSION_NAME}')
+
+hidden_activations = defaultdict(list)
+
+
+def get_activation(name):
+    def hook(model, input, output):
+        hidden_activations[name] += [output.cpu().detach().numpy()]
+    return hook
+
+
+net.conv1.register_forward_hook(get_activation('conv1'))
+net.maxpool.register_forward_hook(get_activation('maxpool1'))
+
+net.layer1[0].conv1.register_forward_hook(get_activation('layer1_block1_conv1'))
+net.layer1[0].conv2.register_forward_hook(get_activation('layer1_block1_conv2'))
+net.layer1[1].conv1.register_forward_hook(get_activation('layer1_block2_conv1'))
+net.layer1[1].conv2.register_forward_hook(get_activation('layer1_block2_conv2'))
+
+net.layer2[0].conv1.register_forward_hook(get_activation('layer2_block1_conv1'))
+net.layer2[0].conv2.register_forward_hook(get_activation('layer2_block1_conv2'))
+net.layer2[1].conv1.register_forward_hook(get_activation('layer2_block2_conv1'))
+net.layer2[1].conv2.register_forward_hook(get_activation('layer2_block2_conv2'))
+
+net.layer3[0].conv1.register_forward_hook(get_activation('layer3_block1_conv1'))
+net.layer3[0].conv2.register_forward_hook(get_activation('layer3_block1_conv2'))
+net.layer3[1].conv1.register_forward_hook(get_activation('layer3_block2_conv1'))
+net.layer3[1].conv2.register_forward_hook(get_activation('layer3_block2_conv2'))
+
+net.layer4[0].conv1.register_forward_hook(get_activation('layer4_block1_conv1'))
+net.layer4[0].conv2.register_forward_hook(get_activation('layer4_block1_conv2'))
+net.layer4[1].conv1.register_forward_hook(get_activation('layer4_block2_conv1'))
+net.layer4[1].conv2.register_forward_hook(get_activation('layer4_block2_conv2'))
+
+net.fc.register_forward_hook(get_activation('fc'))
+
 for epoch in range(ITERS):  # loop over the dataset multiple times
     running_predictions = 0.
     running_loss = 0.0
@@ -123,7 +163,7 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
 
     current_weights = [layer.cpu().detach().numpy() for layer in net.parameters() if layer.requires_grad]
     weights += [current_weights]
-    np.save(f'neuron_logs/{SESSION_NAME}_epoch_{epoch}.npy', weights)
+    np.save(f'neuron_logs/{SESSION_NAME}_epoch_{epoch:03}.npy', weights)
 
     for i, data in enumerate(vanish_dataloader, 0):
 
@@ -159,7 +199,8 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         running_loss += loss
         running_predictions += torch.sum(torch.argmax(outputs, dim=1) == labels).cpu().numpy()
         samples_seen += images.shape[0]
-
+        
+    np.save(f'neuron_logs/{SESSION_NAME}/{SESSION_NAME}_activations_epoch_{epoch:03}.npy', hidden_activations)
     #  = (0, 5)
     # print(np.sum(np.abs(get_weights_for_position(pos, net))))
     print(f'number of bad guesses: {len(list_of_data)}')
@@ -169,7 +210,6 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
     Test accuracy: {H.test_epoch(net, device, test_loader):.3f}\tEpoch time: {time.time()-epochtime:.2f}\
     L1Loss: {running_l1loss.cpu() / minibatches:.3f}\tWeight sum: {sum([p.abs().sum() for p in net.parameters()]):.3f}')
 
-    
 
 endtime = time.time()
 print(f'Training took {endtime-starttime:.2f} seconds')
