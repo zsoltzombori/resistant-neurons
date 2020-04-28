@@ -29,7 +29,7 @@ LR = 0.01
 L1REG = 0.01
 L2REG = 0.01
 MEMORY_SHARE = 0.05
-ITERS = 300
+ITERS = 75
 EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
 SESSION_NAME = f'{time.strftime("%Y%m%d-%H%M%S")}'
@@ -39,8 +39,10 @@ CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
 EVALUATE_USEFULNESS = True
 USEFULNESS_EVAL_SET_SIZE = 1000
+SAVE_ACTIVATIONS = 10  # number of batches to save, 50000 images on Resnet18 with float16 takes 6 gigs
+BASE_SAVEPATH = '/home/levaid/bigstorage/neuron_logs'
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 starttime = time.time()
 
@@ -107,14 +109,14 @@ weights = []
 
 # here comes the hooks
 
-os.mkdir(f'neuron_logs/{SESSION_NAME}')
+os.mkdir(f'{BASE_SAVEPATH}/{SESSION_NAME}')
 
 hidden_activations = defaultdict(list)
 
 
 def get_activation(name):
     def hook(model, input, output):
-        hidden_activations[name] += [output.cpu().detach().numpy()]
+        hidden_activations[name] += [output.cpu().detach().numpy().astype(np.float16)]
     return hook
 
 
@@ -162,8 +164,7 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
             param_group['lr'] = LR/100
 
     current_weights = [layer.cpu().detach().numpy() for layer in net.parameters() if layer.requires_grad]
-    weights += [current_weights]
-    np.save(f'neuron_logs/{SESSION_NAME}_epoch_{epoch:03}.npy', weights)
+    np.save(f'{BASE_SAVEPATH}/{SESSION_NAME}/{SESSION_NAME}_weights_epoch_{epoch:03}.npy', current_weights)
 
     for i, data in enumerate(vanish_dataloader, 0):
 
@@ -199,8 +200,14 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
         running_loss += loss
         running_predictions += torch.sum(torch.argmax(outputs, dim=1) == labels).cpu().numpy()
         samples_seen += images.shape[0]
-        
-    np.save(f'neuron_logs/{SESSION_NAME}/{SESSION_NAME}_activations_epoch_{epoch:03}.npy', hidden_activations)
+
+    for key, val in hidden_activations.items():
+        hidden_activations[key] = np.concatenate(val[:SAVE_ACTIVATIONS], axis=0)
+
+    np.save(f'{BASE_SAVEPATH}/{SESSION_NAME}/{SESSION_NAME}_activations_epoch_{epoch:03}.npy', hidden_activations)
+    for key in hidden_activations:
+        # we need to empty the dictionary
+        hidden_activations[key] = []
     #  = (0, 5)
     # print(np.sum(np.abs(get_weights_for_position(pos, net))))
     print(f'number of bad guesses: {len(list_of_data)}')
