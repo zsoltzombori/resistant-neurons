@@ -7,8 +7,8 @@ import torchvision.transforms as transforms
 import torch.optim
 from torch.utils.data import DataLoader
 import numpy as np
-import torchnet
-import matplotlib.pyplot as plt
+# import torchnet
+# import matplotlib.pyplot as plt
 import helper_functions as H
 import resnet
 
@@ -17,31 +17,25 @@ import os
 
 import time
 
-DATASET = "fashion_mnist"
 TRAINSIZE = 50000
-SEED = None
 DROPOUT = 0.25
 BATCH_SIZE = 500
-DEPTH = 5
-WIDTH = 100
 OUTPUT_COUNT = 10
 LR = 0.01
 L1REG = 0.01
 L2REG = 0.01
-MEMORY_SHARE = 0.05
 ITERS = 75
 EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
 SESSION_NAME = f'{time.strftime("%Y%m%d-%H%M%S")}'
 BN_WEIGHT = 0
 COV_WEIGHT = 0
-CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
 LOG_DIR = "logs/%s" % SESSION_NAME
 EVALUATE_USEFULNESS = True
 USEFULNESS_EVAL_SET_SIZE = 1000
 SAVE_ACTIVATIONS = 10  # number of batches to save, 50000 images on Resnet18 with float16 takes 6 gigs
-BASE_SAVEPATH = '/home/levaid/bigstorage/neuron_logs'
-
+# BASE_SAVEPATH = './neuron_logs'
+BASE_SAVEPATH = '/home/levai/bigstorage/neuron_logs'
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 starttime = time.time()
@@ -87,7 +81,8 @@ classes = ('plane', 'car', 'bird', 'cat',
 
 
 # net = torchnet.FFNet(WIDTH, DEPTH, DROPOUT, OUTPUT_COUNT)
-net = resnet.resnet18(pretrained=False, progress=True)
+# net = resnet.resnet18(pretrained=False, progress=True)
+net = H.CustomResNet(resnet.BasicBlock, num_blocks=[2, 2, 2, 2], num_classes=10)
 net.to(device)
 
 print(net)
@@ -121,7 +116,7 @@ def get_activation(name):
 
 
 net.conv1.register_forward_hook(get_activation('conv1'))
-net.maxpool.register_forward_hook(get_activation('maxpool1'))
+# net.maxpool.register_forward_hook(get_activation('maxpool1'))
 
 net.layer1[0].conv1.register_forward_hook(get_activation('layer1_block1_conv1'))
 net.layer1[0].conv2.register_forward_hook(get_activation('layer1_block1_conv2'))
