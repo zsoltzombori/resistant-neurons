@@ -29,10 +29,10 @@ OUTPUT_COUNT = 10
 LR = 0.1
 L2REG = 1e-4
 MEMORY_SHARE = 0.05
-ITERS = 150
+ITERS = 50
 EVALUATION_CHECKPOINT = 1
 AUGMENTATION = False
-SESSION_NAME = f'{time.strftime("%Y%m%d-%H%M%S")}'
+SESSION_NAME = f'{time.strftime("%Y%m%d-%H%M%S")}_50_iters'
 BN_WEIGHT = 0
 COV_WEIGHT = 0
 CLASSIFIER_TYPE = "dense"  # "conv" / "dense"
@@ -158,14 +158,15 @@ for epoch in range(ITERS):  # loop over the dataset multiple times
 
     list_of_data = []
     for param_group in optimizer.param_groups:
-        if epoch < 100:
+        if epoch < int(ITERS * 0.75):
             param_group['lr'] = LR
-        elif epoch >= 100 and epoch <= 200:
+        elif epoch >= int(ITERS * 0.75) and epoch < int(ITERS * 0.9):
             param_group['lr'] = LR/10
-        elif epoch >= 200:
+        else:
             param_group['lr'] = LR/100
 
-    current_weights = [layer.cpu().detach().numpy() for layer in net.parameters() if layer.requires_grad]
+    current_weights = {name: layer.cpu().detach().numpy() for name, layer in net.named_parameters() if
+                       layer.requires_grad}
     np.save(f'{BASE_SAVEPATH}/{SESSION_NAME}/{SESSION_NAME}_weights_epoch_{epoch:03}.npy', current_weights)
 
     for i, data in enumerate(vanish_dataloader, 0):
