@@ -266,6 +266,41 @@ Gördülő átlag kéne?
 - ResNet18
 
 
-# április 22.
+# április 28.
+
+- Miért SGD + momentum kell resnetre?
+- Van a 18-nál kisebb?
+- Van-e valami egyszerű, determinisztikus módja annak, hogy
+- Abszolútátlag vagy sima átlag?
+
+# május 1.
+
+- maximumokat nézni
+- töröljem ki az első kettőt (conv2, maxpool), 88.9 lesz a háló pontossága
+- természetes lépés, hogy a conv5-öt leütöm
+- amik együtt mozognak, azok talán jó filterek
+- 50 batchsize
+- gyanúsan alacsonyak a méreteim, mert a memóriába befér
+- weight decay nélkül próbáljam ki
+- mert a batchnorm ellátja a szerepet
+- L1 reg volt a súlyokon/aktivációkon
+- BN előtt, BN után, átlagos súlyok
+- az egyenesek végleg feladott filterek
+- kicsit túl nagy a weight decay, és akkor ugrik, amikor már nagyon szar
+- A stride=2 dim csökkentő rétegek
+- max 2-3-on, majd átlagolok 0-n
+- batch norm és relu után max átlag
+- relu: nem az, hogy mennyire nincsen orr, hanem hogy van orr, vagy nincs orr
+- batch normot szoktak fontosságnak tekinteni (vagy mean, vagy stdev)
+- 
+- Learning efficient convolution Liu et al 2017
+- Ács Judit hook
+
+- szerintem nézzük weight decay nélkül és normális felbontású feature mapekkel, kisebb mini batch size
+
+
+# május 7
+- mutogassam meg 15-30 perc alat
+- munkanapló
 
 
