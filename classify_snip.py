@@ -1,7 +1,9 @@
 import numpy as np
 import tensorflow as tf
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
-EPOCHS = 20
+
+EPOCHS = 5
 BATCH_SIZE = 32
 SNIP_WEIGHT = 0.0# 0001
 PRIMARY_LOSS_FN = tf.keras.losses.sparse_categorical_crossentropy
@@ -50,6 +52,9 @@ class SnipModel(tf.keras.Model):
         self.model = model
         self.snip_weight = snip_weight
 
+    def call(self, inputs):
+        return self.model(inputs)
+
     def compile(self, optimizer, primary_loss_fn):
         super(SnipModel, self).compile()
         self.optimizer = optimizer
@@ -96,7 +101,7 @@ optimizer = tf.keras.optimizers.Adam(
 snipModel = SnipModel(model, SNIP_WEIGHT)
 snipModel.compile(optimizer, primary_loss_fn = PRIMARY_LOSS_FN)
         
-snipModel.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1)
+snipModel.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=2)
 
 # evaluate model
 snipModel.evaluate(x_test, y_test, batch_size=BATCH_SIZE, verbose=2)
